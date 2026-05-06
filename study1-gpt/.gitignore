@@ -1,0 +1,16 @@
+# Tokenized training data (~20GB)
+edu_fineweb10B/
+
+# Downloaded eval data
+hellaswag/
+
+# Model checkpoints
+checkpoints/
+*.pt
+
+# Training logs
+log/
+logs/
+
+# Experiment tracking
+wandb/

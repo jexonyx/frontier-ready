@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.vscode/
+.idea/
+.DS_Store
+.env
+.ipynb_checkpoints/
+PLAN.md

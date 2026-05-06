@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "study1-gpt"
+version = "0.1.0"
+description = "Reproduce GPT-2 124M training and test architectural modifications"
+requires-python = ">=3.11"
+dependencies = [
+    "torch>=2.2",
+    "numpy",
+    "tiktoken",
+    "transformers",
+    "datasets",
+    "tqdm",
+    "requests",
+]
+
+[project.optional-dependencies]
+dev = ["ruff", "ipython"]
+analysis = ["matplotlib", "pandas", "jupyter"]
+tracking = ["wandb"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["nanogpt_replication"]
