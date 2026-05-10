@@ -1,17 +1,16 @@
-# Frontier Lab Research Engineer — Program Plan
+# Frontier Systems Playground — Weekend Project Plan
 
-**Owner:** Jex Fatin  
-**Drafted:** May 2026  
-**Status:** Draft v1  
+**Drafted:** May 2026
+**Status:** Draft v1
 **Horizon:** 18 weeks, weekend cadence (~3 productive days/week)
 
 ---
 
 ## Purpose
 
-Build a portfolio of three to four public technical artefacts demonstrating ML systems literacy, agentic systems research depth, and evaluation design competence — sufficient to make a credible application to a frontier lab research engineer role on an agents or scaffolding team.
+Playground where all the toys are neural networks.
 
-The rate-limiting step is not the CV. It is the absence of public artefacts that survive scrutiny by a research hiring committee.
+Weekend project to mess with things I don't get to explore properly: training dynamics when you swap architectural components, why agent benchmarks fail in specific patterns, scaffold design choices. Build stuff, break stuff, write up what actually happened.
 
 ---
 
@@ -27,7 +26,7 @@ The rate-limiting step is not the CV. It is the absence of public artefacts that
 
 **Gate rule:** no phase begins until the previous phase's artefact is published.
 
-Phases 4 and 5 are optional. Skip if Phase 3 lands strongly (workshop acceptance, warm lab inbound, or positive engagement), if calendar is at risk, or if focus should shift to applications. Three strong artefacts beat five weak ones.
+Phases 4 and 5 are optional. Skip if Phase 3 produces something genuinely interesting, if calendar is at risk, or if the curiosity has been scratched. Three solid explorations beat five rushed ones.
 
 ---
 
@@ -37,7 +36,7 @@ Phases 4 and 5 are optional. Skip if Phase 3 lands strongly (workshop acceptance
 
 Reproduce GPT-2 124M training on a small corpus (TinyStories or OpenWebText subset), then introduce **one** substantive architectural modification in isolation: RoPE instead of learned positional embeddings, GQA instead of MHA, or an alternative optimiser (Lion, Sophia). Compare loss curves quantitatively.
 
-The point is not the modification — it is demonstrating the ability to intervene in the training loop and reason about what changes.
+Want to see what actually changes when you swap out a component, not just read about it in papers.
 
 **Constraints**
 - Single GPU (rented H100 by the hour — Lambda, Modal, or Runpod). No multi-node.
@@ -70,7 +69,7 @@ Pick one published baseline — τ-bench paper baselines or SWE-agent on a SWE-B
 
 ### Phase 3 — Flow-first vs Reasoning-first Empirical Study (weeks 8–14)
 
-**The centrepiece artefact.**
+**The interesting one.**
 
 Empirical comparison of two architectural paradigms:
 
@@ -99,7 +98,7 @@ Build minimal reference implementations of each. Run both on τ-bench (isolates 
 
 Design a small, novel capability eval suite (30–100 tasks, clean held-out split) targeting an underexplored capability: agent recognition of impossible tasks, calibration on confidence claims, or performance under adversarial tool descriptions. Run across 3–4 frontier models. Frame as a benchmark proposal.
 
-**Skip Phase 4 if:** Phase 3 lands strongly, the four-month calendar is at risk, or interest in evals is materially lower than interest in agents.
+**Skip Phase 4 if:** Phase 3 turns out really interesting, calendar is getting tight, or evals stop being fun.
 
 ---
 
@@ -271,7 +270,7 @@ A positive result — SAE features reliably signal OOD inputs and routing improv
 
 A null result — features don't cleanly separate, or routing doesn't help — is also publishable and arguably more honest about the current limits of SAE-based interpretability for real-time inference. It narrows the search space for future work.
 
-Either outcome, written up rigorously and honestly, is a stronger Phase 5 artefact than a capability eval suite. It is also the piece in this portfolio most likely to be genuinely interesting to a research hiring committee — not because it replicates known results, but because it asks a question nobody has asked cleanly before.
+Either outcome, written up rigorously and honestly, is more interesting than another capability eval suite. This is the phase most likely to produce something genuinely novel — not replicating known results, but asking a question nobody has asked cleanly before.
 
 **Phase 5 is contingent on Phase 3 delivery. Do not begin Tier One until the Phase 3 writeup is published. The temptation to start early because the idea is exciting is the exact failure mode this plan is designed to prevent.**
 
@@ -286,30 +285,27 @@ Either outcome, written up rigorously and honestly, is a stronger Phase 5 artefa
 
 **Tooling**
 - Rented H100s by the hour (Lambda, Modal, Runpod). No reserved capacity.
-- All code public from day one — the commit history signals working style.
-- Personal landing page linking all artefacts (Quarto or Astro static site).
+- All code public from day one — easier to share and keep honest.
+- Simple landing page linking everything (Quarto or Astro static site).
 
 **Writing discipline**
 - Each phase has a hard publish date. Calendar it.
 - Write the writeup before you think you're ready — writing exposes gaps in the analysis.
 - One round of external review per artefact: one ML systems reviewer, one writing-quality reviewer. Identify them in advance.
 
-**Application track**
-- **Type 2 (Applied AI / MTS):** begin from week 4, once Phase 1 is published.
-- **Type 1 (frontier lab):** wait until end of Phase 3.
-- **Referral cultivation:** begin week 1. Re-establish contact with 1–2 people per fortnight from the Anthropic SF training network, no ask attached. The ask comes at the end of Phase 3.
+**Opportunistic outreach**
+- If any of this produces something interesting, might be worth chatting to people about. But that's secondary — finish the work first.
 
 ---
 
-## Success Criteria
+## What Success Looks Like
 
 | Outcome | Evidence |
 |---------|----------|
-| Three published artefacts | Public repos, each with a writeup of 1,500–4,000 words, discoverable from a single landing page |
-| ML systems credibility | Phase 1 references training internals at a level that survives interview probing |
-| Workshop submission *(stretch)* | Phase 3 submitted to LangChain Agents, NeurIPS workshops, or COLM |
-| Active referral pathway | ≥1 warm referral into a target lab via the Anthropic SF network |
-| Interview-ready narrative | Can describe each artefact at 60 seconds, 5 minutes, and 30 minutes depth |
+| Three finished explorations | Public repos, each with honest writeup of what worked and what didn't |
+| Actually learned something | Can explain the technical choices and their trade-offs without handwaving |
+| Workshop submission *(stretch)* | Phase 3 might be worth submitting to LangChain Agents, NeurIPS workshops, or COLM if it's interesting enough |
+| Had fun | Would do another round of this afterwards |
 
 ---
 
@@ -319,29 +315,27 @@ Either outcome, written up rigorously and honestly, is a stronger Phase 5 artefa
 |------|-----------|--------|------------|
 | Starting all phases, finishing none | High | High | Hard publish dates; no starting Phase N+1 until N is published |
 | Day-job collapses weekend capacity | Medium | High | 20% buffer per phase; re-baseline rather than compress scope if two consecutive weekends lost |
-| Phase 3 null result | Medium | Medium | Pre-commit to publishing regardless; null result is publishable |
+| Phase 3 null result | Medium | Medium | Pre-commit to publishing regardless; null result is still interesting |
 | Compute overrun | Medium | Low–Med | Enforce per-phase caps; prefer ≤3B models for all training experiments |
 | Scope creep on Phase 3 | High | High | Pre-register before running; log out-of-scope findings as Phase 5, do not absorb |
 | Phase 2 replication fails | Medium | Low | The attempt is the artefact; document the failure thoroughly |
-| Job market timing pressure | Medium | High | Type 2 applications run in parallel from week 4 |
+| Loses steam halfway through | Medium | Medium | That's fine — even two finished explorations is better than five half-done ones |
 
 ---
 
 ## Key Assumptions
 
-- Day-job intensity at Quantium remains at current level. A material increase requires re-baselining.
+- Day-job intensity remains manageable. If things get hectic, timelines stretch but scope stays the same.
 - Personal compute/API budget of ~AUD $890 across the full program (Phases 1–5).
 - Frontier model API access at consumer terms throughout.
-- Sydney/Melbourne decision is a live variable; no relocation assumed within the program window.
 
 ---
 
 ## Explicit Non-Goals
 
-- Breadth across all five research lanes. This plan concentrates on **agents and evals only**.
-- CV revision before Phase 3 ships. Artefacts first.
-- Peer-reviewed publication. Workshop submission is a stretch goal; a strong blog post is sufficient.
-- Frontier-scale results. All training experiments use ≤3B parameter models.
+- Breadth across all research areas. Focusing on **agents and evals only** — the stuff that's actually interesting right now.
+- Peer-reviewed publication. Workshop submission if something turns out genuinely novel; otherwise just solid writeups.
+- Frontier-scale results. All training experiments use ≤3B parameter models. The questions are interesting at small scale.
 
 ---
 
