@@ -11,8 +11,10 @@ config:
   frontier-ready-infra:gpuType: nvidia-l4
   frontier-ready-infra:gpuCount: "1"
   # Storage Configuration
-  frontier-ready-infra:bootDiskSize: "100" # GB
+  frontier-ready-infra:bootDiskSize: "100" # GB - OS and system files
   frontier-ready-infra:bootDiskType: pd-standard
+  frontier-ready-infra:dataDiskSize: "250" # GB - datasets, checkpoints, experiments
+  frontier-ready-infra:dataDiskType: pd-ssd # SSD for better I/O performance
   frontier-ready-infra:imageFamily: pytorch-2-9-cu129-ubuntu-2204-nvidia-580
   frontier-ready-infra:imageProject: deeplearning-platform-release
   # Cost Optimization
