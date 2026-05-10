@@ -1,0 +1,6 @@
+name: frontier-ready-infra
+runtime:
+  name: nodejs
+  options:
+    typescript: true
+description: GPU VM infrastructure for ML experiments

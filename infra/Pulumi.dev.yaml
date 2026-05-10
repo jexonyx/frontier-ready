@@ -1,0 +1,24 @@
+config:
+  # GCP Project - REQUIRED (or set GCP_PROJECT env var)
+  # frontier-ready-infra:gcpProject: your-gcp-project-id
+
+  # Experiment Configuration
+  frontier-ready-infra:experimentName: nanogpt
+  frontier-ready-infra:environment: dev
+  # Compute Configuration
+  frontier-ready-infra:zone: us-central1-a
+  frontier-ready-infra:machineType: g2-standard-4
+  frontier-ready-infra:gpuType: nvidia-l4
+  frontier-ready-infra:gpuCount: "1"
+  # Storage Configuration
+  frontier-ready-infra:bootDiskSize: "100" # GB
+  frontier-ready-infra:bootDiskType: pd-standard
+  frontier-ready-infra:imageFamily: pytorch-2-9-cu129-ubuntu-2204-nvidia-580
+  frontier-ready-infra:imageProject: deeplearning-platform-release
+  # Cost Optimization
+  frontier-ready-infra:preemptible: "true"
+  # Network Configuration
+  frontier-ready-infra:network: default
+  frontier-ready-infra:enableExternalIp: "true"
+  frontier-ready-infra:gcpProject: frontier-ready
+  gcp:project: frontier-ready

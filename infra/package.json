@@ -1,0 +1,18 @@
+{
+  "name": "frontier-ready-infra",
+  "version": "1.0.0",
+  "description": "Infrastructure as Code for frontier-ready ML experiments",
+  "main": "index.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf bin/"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@pulumi/pulumi": "^3.0.0",
+    "@pulumi/gcp": "^7.0.0"
+  }
+}
