@@ -1,14 +1,16 @@
-# Ideas
+# Experiment Candidates
 
-An unstructured collection of random thoughts that occur to me while going through this process. Nothing here is polished or necessarily even correct.
+This document lists architectural modifications and extension experiments for GPT-2 124M replication work.
 
-## Phase 1 — Architectural Modification Candidates
+## Core Architectural Modifications
+
+Single-variable modifications to the baseline GPT-2 124M architecture, each introducing one isolated change for controlled comparison.
 
 - **Differential Attention** (Microsoft, 2024): Computes attention as the difference of two softmax attention maps to reduce noise in attention weights. Clean single-variable swap in `CausalSelfAttention`. Genuine uncertainty about effect at 124M scale — worth investigating whether the noise-reduction benefit materialises at small model size or only emerges at larger scale.
 
 - **Multi-head Latent Attention** (DeepSeek-V2): Compresses KV cache into a low-rank latent space, reducing memory and compute for KV projections. Modifies how attention is computed rather than which tokens are attended to, so information flow is preserved. Open question at 124M scale: does the compression hurt when the model is already small, or does the implicit regularisation help?
 
-- **RoPE (Rotary Position Embeddings):** Replace learned positional embeddings (`wpe`) with rotary embeddings applied to Q and K vectors. The cleanest possible swap — remove the position embedding table and modify `CausalSelfAttention` to apply rotations. At 1024 context with 124M parameters, genuinely unclear whether RoPE's inductive bias beats learned embeddings that have enough data to learn the same patterns. Probably the single safest choice for Phase 1.
+- **RoPE (Rotary Position Embeddings):** Replace learned positional embeddings (`wpe`) with rotary embeddings applied to Q and K vectors. The cleanest possible swap — remove the position embedding table and modify `CausalSelfAttention` to apply rotations. At 1024 context with 124M parameters, genuinely unclear whether RoPE's inductive bias beats learned embeddings that have enough data to learn the same patterns. Probably the single safest choice for initial implementation.
 
 - **GQA (Grouped Query Attention):** Reduce KV heads from 12 to 4 (or 2 or 1) while keeping 12 query heads. Multiple query heads share the same key-value pair. At 124M the model is already small — does reducing KV capacity hurt disproportionately compared to larger models where GQA is standard? Slightly reduces parameter count, which needs accounting for in analysis.
 
@@ -18,6 +20,8 @@ An unstructured collection of random thoughts that occur to me while going throu
 
 - **RMSNorm (replacing LayerNorm):** Replace all LayerNorm layers with RMSNorm, which drops the mean-centering step and only normalises by root-mean-square. Used in LLaMA and most post-2023 architectures. Simplest implementation of all candidates (~10 lines of code). Risk: the effect might be too small to produce an interesting loss curve difference at this scale, leaving a correct but thin writeup.
 
-### Extension Experiments
+## Extension Experiments
 
-- **RETRO-style Chunked Cross-Attention:** Augment GPT-2 124M with chunked cross-attention over a nearest-neighbour retrieval index. Hypothesis: model achieves lower perplexity than baseline at equivalent parameter count, with the gap widening on knowledge-dense passages. Implementation: add a FAISS index over training corpus chunks (~64 tokens each), a lightweight chunk encoder (can reuse base model's embedding layer initially), and CCA layers interleaved at every other transformer block — each input chunk cross-attends to its k=2 nearest retrieved neighbours. Controlled variables: same corpus, same tokeniser, same optimiser as Phase 1 baseline. Retrieval database built from the *training* corpus — no external knowledge, so any perplexity gain is attributable to the architectural change, not data advantage. Measures: perplexity vs baseline on held-out set; perplexity on knowledge-dense subset vs syntactic/structural subset (tests whether retrieval helps more where memorisation would otherwise be load-bearing); inference latency cost of retrieval. Honest scope question: chunk encoder adds parameters — need to either freeze it (cleaner comparison) or account for parameter delta explicitly. Decide before running, not after. Why it's a good artefact: direct architectural implementation of something most engineers only encounter as an API abstraction. Legible to a research hiring committee in a way that prompt-engineering experiments aren't.
+More complex experiments that extend beyond single-component modifications.
+
+- **RETRO-style Chunked Cross-Attention:** Augment GPT-2 124M with chunked cross-attention over a nearest-neighbour retrieval index. Hypothesis: model achieves lower perplexity than baseline at equivalent parameter count, with the gap widening on knowledge-dense passages. Implementation: add a FAISS index over training corpus chunks (~64 tokens each), a lightweight chunk encoder (can reuse base model's embedding layer initially), and CCA layers interleaved at every other transformer block — each input chunk cross-attends to its k=2 nearest retrieved neighbours. Controlled variables: same corpus, same tokeniser, same optimiser as baseline. Retrieval database built from the *training* corpus — no external knowledge, so any perplexity gain is attributable to the architectural change, not data advantage. Measures: perplexity vs baseline on held-out set; perplexity on knowledge-dense subset vs syntactic/structural subset (tests whether retrieval helps more where memorisation would otherwise be load-bearing); inference latency cost of retrieval. Honest scope question: chunk encoder adds parameters — need to either freeze it (cleaner comparison) or account for parameter delta explicitly. Decide before running, not after. Why it's a good artefact: direct architectural implementation of something most engineers only encounter as an API abstraction. Legible to a research hiring committee in a way that prompt-engineering experiments aren't.
