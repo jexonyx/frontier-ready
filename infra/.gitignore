@@ -2,7 +2,7 @@ node_modules/
 bin/
 .env
 Pulumi.*.yaml
-!Pulumi.dev.yaml
+!Pulumi.example.yaml
 package-lock.json
 *.log
 .DS_Store

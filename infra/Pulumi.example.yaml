@@ -1,0 +1,36 @@
+config:
+  # GCP Project Configuration - REQUIRED
+  frontier-ready-infra:gcpProject: your-gcp-project-id
+  gcp:project: your-gcp-project-id
+
+  # Experiment Configuration - REQUIRED
+  frontier-ready-infra:experimentName: nanogpt  # Name of your experiment
+  frontier-ready-infra:environment: dev         # Environment (dev, staging, prod)
+
+  # Compute Configuration - REQUIRED
+  frontier-ready-infra:zone: us-central1-a      # GCP zone
+  frontier-ready-infra:machineType: g2-standard-4  # Machine type
+  frontier-ready-infra:gpuType: nvidia-l4       # GPU type
+  frontier-ready-infra:gpuCount: "1"            # Number of GPUs
+
+  # Storage Configuration - REQUIRED
+  frontier-ready-infra:bootDiskSize: "100"      # GB - OS and system files
+  frontier-ready-infra:bootDiskType: pd-standard
+  frontier-ready-infra:dataDiskSize: "250"      # GB - datasets, checkpoints, experiments
+  frontier-ready-infra:dataDiskType: pd-ssd     # pd-ssd for better I/O performance
+
+  # Image Configuration - REQUIRED
+  frontier-ready-infra:imageFamily: pytorch-2-9-cu129-ubuntu-2204-nvidia-580
+  frontier-ready-infra:imageProject: deeplearning-platform-release
+
+  # Cost Optimization - REQUIRED
+  frontier-ready-infra:preemptible: "true"      # Use preemptible instances to save costs
+
+  # Network Configuration - REQUIRED
+  frontier-ready-infra:network: default
+  frontier-ready-infra:enableExternalIp: "true" # Enable external IP for SSH access
+
+# To use this template:
+# 1. Copy this file: cp Pulumi.example.yaml Pulumi.<stack-name>.yaml
+# 2. Replace placeholder values with your actual configuration
+# 3. Run: pulumi stack select <stack-name>
