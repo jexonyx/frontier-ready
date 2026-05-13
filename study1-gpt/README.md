@@ -2,44 +2,80 @@
 
 Reproduce GPT-2 124M training using Karpathy's build-nanogpt, then introduce one architectural modification and compare loss curves.
 
-## Setup
+## Quick Start
 
-### Prerequisites
+### On your GPU VM:
+
+```bash
+# Clone the repo
+cd /data
+git clone --recurse-submodules https://github.com/your-username/frontier-ready.git
+cd frontier-ready/study1-gpt
+
+# Setup (one command!)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source $HOME/.cargo/env
+uv venv && source .venv/bin/activate
+uv pip install -e .
+uv pip install torch --index-url https://download.pytorch.org/whl/cu121
+
+# Run FineWeb data preparation
+cd build-nanogpt
+python fineweb.py
+
+# Start training
+python train_gpt2.py
+```
+
+That's it! No complicated package installations.
+
+## What This Does
+
+1. **FineWeb preparation** (`fineweb.py`): Downloads and tokenizes 10B tokens from FineWeb-Edu dataset
+   - Takes ~1-2 hours
+   - Creates `edu_fineweb10B/` with ~100 shards
+   - Each shard is 100M tokens
+
+2. **Training** (`train_gpt2.py`): Trains GPT-2 124M on the prepared data
+   - Uses all available GPU memory
+   - Saves checkpoints to `log/`
+   - Logs training metrics
+
+## Prerequisites
 
 - Python 3.11+
-- [uv](https://docs.astral.sh/uv/) (recommended) or pip
-- For training: NVIDIA GPU with CUDA (H100 recommended)
+- NVIDIA GPU with CUDA
+- [uv](https://docs.astral.sh/uv/) (installed in setup commands above)
 
-### Install
+## Project Structure
 
-```bash
-git clone --recurse-submodules <repo-url>
-cd frontier-ready/study1-gpt
-uv venv && uv pip install -r pyproject.toml --all-extras
+```
+study1-gpt/
+  build-nanogpt/           # Karpathy's nanogpt scripts (submodule, not installed as package)
+    ├── fineweb.py         # Data preparation
+    ├── train_gpt2.py      # Training script
+    └── hellaswag.py       # Evaluation
+  pyproject.toml           # Just lists dependencies - simple!
+  README.md                # This file
 ```
 
-For remote GPU boxes with CUDA:
-```bash
-uv pip install torch --index-url https://download.pytorch.org/whl/cu121
-```
+## Why It's Simple Now
 
-### Data Preparation
-
-```bash
-# Tokenize FineWeb-Edu (produces edu_fineweb10B/)
-python build-nanogpt/fineweb.py
-```
+- `build-nanogpt/` is just a directory of scripts (no package installation needed)
+- All dependencies are in one place: `pyproject.toml`
+- One install command: `uv pip install -e .`
+- PyTorch installed separately to choose CUDA version
 
 ## Plan
 
-1. Instrument `train_gpt2.py` with comprehensive logging — capture all valuable metrics so the baseline never needs re-running
-2. Pick architectural modification (see candidates in `../IDEAS.md`)
-3. Run baseline GPT-2 124M training — rent H100, prepare FineWeb-Edu data, run `train_gpt2.py`, verify loss curve reproduces Karpathy's result
-4. Implement the modification — fork `train_gpt2.py`, make the single-variable change
-5. Run modified training — same data, same hyperparameters, only the architectural change differs
-6. Analysis — plot loss curves side by side, run HellaSwag comparison
-7. Writeup — 1,500 words: modification, hypothesis, result, what comes next
-8. Clean up project and README for long-term public access
+1. Instrument `train_gpt2.py` with comprehensive logging
+2. Pick architectural modification
+3. Run baseline GPT-2 124M training
+4. Implement the modification
+5. Run modified training
+6. Analysis - plot loss curves, run HellaSwag comparison
+7. Writeup - 1,500 words: modification, hypothesis, result
+8. Clean up for public access
 
 ## Experiments
 
@@ -54,17 +90,3 @@ _TBD — architectural change to compare against baseline._
 ## Results
 
 _Loss curves and analysis will be added here._
-
-## Reproducing
-
-_Commands and expected compute cost will be documented here._
-
-## Project Structure
-
-```
-study1-gpt/
-  build-nanogpt/           # Karpathy's nanogpt repo (submodule)
-  analysis/                # Plotting and analysis scripts
-  writeup/                 # 1,500-word writeup and figures
-  pyproject.toml           # Dependencies
-```

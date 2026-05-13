@@ -18,7 +18,4 @@ dev = ["ruff", "ipython"]
 analysis = ["matplotlib", "pandas", "jupyter"]
 tracking = ["wandb"]
 
-[tool.uv.workspace]
-members = [
-    "build-nanogpt",
-]
+# build-nanogpt is a submodule with standalone scripts, not a workspace member
