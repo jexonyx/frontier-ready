@@ -7,38 +7,60 @@ export function loadConfig(): InfraConfig {
   // Configuration with environment variable fallbacks
   const config = new pulumi.Config();
 
+  // Helper function to get required config
+  const getRequired = (key: string, envVar?: string): string => {
+    const value = config.get(key) || (envVar ? process.env[envVar] : undefined);
+    if (!value) {
+      throw new Error(`Required configuration '${key}' must be specified via Pulumi config${envVar ? ` or ${envVar} env var` : ''}`);
+    }
+    return value;
+  };
+
+  const getRequiredNumber = (key: string, envVar?: string): number => {
+    const value = config.getNumber(key) ?? (envVar && process.env[envVar] ? Number(process.env[envVar]) : undefined);
+    if (value === undefined || isNaN(value)) {
+      throw new Error(`Required configuration '${key}' must be specified as a number via Pulumi config${envVar ? ` or ${envVar} env var` : ''}`);
+    }
+    return value;
+  };
+
+  const getRequiredBoolean = (key: string, envVar?: string): boolean => {
+    const value = config.getBoolean(key) ?? (envVar && process.env[envVar] ? process.env[envVar] === "true" : undefined);
+    if (value === undefined) {
+      throw new Error(`Required configuration '${key}' must be specified as a boolean via Pulumi config${envVar ? ` or ${envVar} env var` : ''}`);
+    }
+    return value;
+  };
+
   // GCP Project Configuration
-  const gcpProject = config.get("gcpProject") || process.env.GCP_PROJECT;
-  if (!gcpProject) {
-    throw new Error("GCP project must be specified via config or GCP_PROJECT env var");
-  }
+  const gcpProject = getRequired("gcpProject", "GCP_PROJECT");
 
   // Experiment Configuration
-  const experimentName = config.get("experimentName") || process.env.EXPERIMENT_NAME || "default";
-  const environment = config.get("environment") || process.env.ENVIRONMENT || "dev";
+  const experimentName = getRequired("experimentName", "EXPERIMENT_NAME");
+  const environment = getRequired("environment", "ENVIRONMENT");
 
   // Compute Configuration
-  const zone = config.get("zone") || process.env.GCP_ZONE || "us-central1-a";
-  const machineType = config.get("machineType") || process.env.MACHINE_TYPE || "a2-highgpu-1g";
-  const gpuType = config.get("gpuType") || process.env.GPU_TYPE || "nvidia-tesla-a100";
-  const gpuCount = config.getNumber("gpuCount") || Number(process.env.GPU_COUNT) || 1;
+  const zone = getRequired("zone", "GCP_ZONE");
+  const machineType = getRequired("machineType", "MACHINE_TYPE");
+  const gpuType = getRequired("gpuType", "GPU_TYPE");
+  const gpuCount = getRequiredNumber("gpuCount", "GPU_COUNT");
 
   // Storage Configuration
-  const bootDiskSize = config.getNumber("bootDiskSize") || Number(process.env.BOOT_DISK_SIZE) || 100;
-  const bootDiskType = config.get("bootDiskType") || process.env.BOOT_DISK_TYPE || "pd-standard";
-  const dataDiskSize = config.getNumber("dataDiskSize") || Number(process.env.DATA_DISK_SIZE) || 200;
-  const dataDiskType = config.get("dataDiskType") || process.env.DATA_DISK_TYPE || "pd-ssd";
-  const imageFamily = config.get("imageFamily") || process.env.IMAGE_FAMILY || "pytorch-latest-gpu";
-  const imageProject = config.get("imageProject") || process.env.IMAGE_PROJECT || "deeplearning-platform-release";
+  const bootDiskSize = getRequiredNumber("bootDiskSize", "BOOT_DISK_SIZE");
+  const bootDiskType = getRequired("bootDiskType", "BOOT_DISK_TYPE");
+  const dataDiskSize = getRequiredNumber("dataDiskSize", "DATA_DISK_SIZE");
+  const dataDiskType = getRequired("dataDiskType", "DATA_DISK_TYPE");
+  const imageFamily = getRequired("imageFamily", "IMAGE_FAMILY");
+  const imageProject = getRequired("imageProject", "IMAGE_PROJECT");
 
   // Cost Optimization
-  const preemptible = config.getBoolean("preemptible") ?? (process.env.PREEMPTIBLE === "true" ? true : false);
+  const preemptible = getRequiredBoolean("preemptible", "PREEMPTIBLE");
 
   // Network Configuration
-  const network = config.get("network") || process.env.NETWORK || "default";
-  const enableExternalIp = config.getBoolean("enableExternalIp") ?? (process.env.ENABLE_EXTERNAL_IP === "false" ? false : true);
+  const network = getRequired("network", "NETWORK");
+  const enableExternalIp = getRequiredBoolean("enableExternalIp", "ENABLE_EXTERNAL_IP");
 
-  // Startup Script (optional)
+  // Startup Script (optional - falls back to default script file)
   const startupScript = config.get("startupScript") || process.env.STARTUP_SCRIPT || loadDefaultStartupScript();
 
   return {
