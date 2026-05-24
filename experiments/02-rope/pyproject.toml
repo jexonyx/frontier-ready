@@ -9,6 +9,10 @@ dependencies = [
     "pyyaml>=6.0",
 ]
 
+[tool.uv.sources]
+nanogpt = { workspace = true }
+exptools = { workspace = true }
+
 [project.optional-dependencies]
 analysis = [
     "jupyter>=1.0.0",
