@@ -1,0 +1,29 @@
+[project]
+name = "exptools"
+version = "0.1.0"
+description = "Experiment analysis tools for GPT training"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "matplotlib>=3.7.0",
+    "seaborn>=0.12.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "ruff>=0.4.0",
+]
+
+[project.scripts]
+exptools-visualize = "exptools.scripts.visualize_run:main"
+exptools-summarize = "exptools.scripts.summarize_run:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["exptools*"]
