@@ -1,3 +1,0 @@
-[submodule "study1-gpt/build-nanogpt"]
-	path = study1-gpt/build-nanogpt
-	url = https://github.com/jexonyx/build-nanogpt.git
