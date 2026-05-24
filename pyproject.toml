@@ -1,0 +1,21 @@
+[project]
+name = "frontier-ready"
+version = "0.2.0"
+description = "ML research: GPT-2 pre-training, SFT, and RL experimentation"
+requires-python = ">=3.11"
+
+[tool.uv.workspace]
+members = [
+    "packages/nanogpt",
+    "packages/exptools",
+    "experiments/01-baseline",
+    "experiments/02-rope",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "ruff>=0.4.0",
+    "ipython>=8.0.0",
+    "jupyter>=1.0.0",
+    "pytest>=7.4.0",
+]

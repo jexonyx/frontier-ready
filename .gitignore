@@ -8,3 +8,24 @@ venv/
 .DS_Store
 .env
 .ipynb_checkpoints/
+
+# Workspace outputs
+outputs/*/checkpoints/*
+outputs/*/log.txt
+!outputs/*/.gitkeep
+
+# Data files (large)
+data/edu_fineweb10B/*.bin
+data/hellaswag/*.jsonl
+!data/.gitkeep
+
+# UV lock file
+uv.lock
+
+# Experiment outputs
+experiments/*/outputs/
+experiments/*/.ipynb_checkpoints/
+
+# Migration tracking
+MIGRATION_BEFORE.txt
+MIGRATION_FILES_BEFORE.txt
