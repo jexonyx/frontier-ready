@@ -1,0 +1,34 @@
+experiment:
+  name: "rope"
+  description: "GPT-2 124M with RoPE positional embeddings"
+
+variant:
+  type: "rope"  # Use RoPE variant instead of learned positional embeddings
+
+model:
+  n_layer: 12
+  n_head: 12
+  n_embd: 768
+  block_size: 1024
+  vocab_size: 50257
+
+training:
+  max_steps: 19072
+  batch_size: 524288  # tokens per step
+  gradient_accumulation_steps: 1024  # with B=4, T=1024
+  learning_rate: 0.0006
+  warmup_steps: 715
+  weight_decay: 0.1
+
+data:
+  train_data_dir: "../../data/edu_fineweb10B"
+  val_data_dir: "../../data/edu_fineweb10B"
+  eval_data_dir: "../../data/hellaswag"
+
+evaluation:
+  eval_interval: 250
+  eval_iters: 20
+
+output:
+  log_dir: "../../outputs/rope"
+  checkpoint_interval: 5000

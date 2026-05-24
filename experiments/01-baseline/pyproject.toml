@@ -1,0 +1,20 @@
+[project]
+name = "experiment-baseline"
+version = "0.1.0"
+description = "Baseline GPT-2 124M training experiment"
+requires-python = ">=3.11"
+dependencies = [
+    "nanogpt",
+    "exptools",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+analysis = [
+    "jupyter>=1.0.0",
+    "ipykernel>=6.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
