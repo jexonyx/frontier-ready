@@ -19,10 +19,12 @@ Weekend project to mess with things I don't get to explore properly: training dy
 | Phase | Weeks | Focus | Deliverable | Compute budget |
 |-------|-------|-------|-------------|----------------|
 | 1 | 1–3 | ML fundamentals — nanoGPT replication & extension | Public repo + writeup (1,500 words) | AUD $150 |
-| 2 | 4–7 | Agent benchmark replication (τ-bench or SWE-Bench) | Public repo + replication notes (2,000 words) | AUD $200 |
-| 3 | 8–14 | Empirical study: flow-first vs reasoning-first scaffolds | Workshop-shaped paper + repo + blog post | AUD $400 |
-| 4 | 15–18 | Capability eval design *(optional)* | Eval suite + benchmark proposal writeup | — |
-| 5 | 19–22 | SAE-based task boundary recognition *(optional)* | Workshop paper + repo + SAE analysis | AUD $140 |
+| 1a | 4–6 | **SFT fundamentals — instruction tuning** | **Public repo + SFT writeup (1,500 words)** | **AUD $100** |
+| 1b | 7–10 | **RL fundamentals — PPO vs DPO comparison** | **Public repo + RL writeup (2,000 words)** | **AUD $200** |
+| 2 | 11–14 | Agent benchmark replication (τ-bench or SWE-Bench) | Public repo + replication notes (2,000 words) | AUD $200 |
+| 3 | 15–21 | Empirical study: flow-first vs reasoning-first scaffolds | Workshop-shaped paper + repo + blog post | AUD $400 |
+| 4 | 22–25 | Capability eval design *(optional)* | Eval suite + benchmark proposal writeup | — |
+| 5 | 26–29 | SAE-based task boundary recognition *(optional)* | Workshop paper + repo + SAE analysis | AUD $140 |
 
 **Gate rule:** no phase begins until the previous phase's artefact is published.
 
@@ -51,7 +53,69 @@ Want to see what actually changes when you swap out a component, not just read a
 
 ---
 
-### Phase 2 — Agent Benchmark Replication (weeks 4–7)
+### Phase 1a — SFT Fundamentals (weeks 4–6) NEW
+
+Take a pre-trained checkpoint from Phase 1 and fine-tune it on instruction-following data. Compare base model vs SFT'd model on instruction-following tasks. Understand what changes during SFT and why it matters for agent systems.
+
+This bridges pre-training and agents: agents need instruction-following capability, and SFT is how you get it.
+
+**Constraints**
+- Single checkpoint from Phase 1 baseline (GPT-2 124M)
+- One instruction dataset (Alpaca-52k or Dolly-15k)
+- Single GPU (rented H100 by the hour)
+- Compute cap: AUD $100
+
+**Acceptance criteria**
+- Public repo: `nanogpt-sft` package with reusable SFT trainer
+- Comparison: base vs SFT on simple instruction-following tasks
+- Writeup (1,500 words): what is SFT, data format choices, hyperparameters, quantitative comparison, qualitative sample analysis
+- Honest discussion: where SFT helps, where it doesn't, what breaks
+- Loss curves and instruction-following accuracy charted
+
+**Key questions to answer**
+- How much does loss drop during SFT vs pre-training?
+- What hyperparameters matter most (learning rate, sequence length)?
+- Does the model actually follow instructions or just pattern-match?
+- What instruction types work well vs poorly?
+
+---
+
+### Phase 1b — RL Fundamentals (weeks 7–10) NEW
+
+Implement RLHF pipeline from scratch: train a reward model on preferences, then optimize policy with PPO. Compare with DPO (simpler, no reward model). Understand the fundamental trade-offs.
+
+This completes the modern LLM training pipeline and provides RL-tuned models for agent experiments.
+
+**Constraints**
+- Start from SFT checkpoint from Phase 1a
+- Small preference dataset (HH-RLHF subset, ~10k pairs)
+- Implement both PPO and DPO for comparison
+- Single GPU for reward model, 2-GPU for PPO (if needed)
+- Compute cap: AUD $200
+
+**Acceptance criteria**
+- Public repo: `nanogpt-rl` package with PPO and DPO implementations
+- Working reward model with validation accuracy >70%
+- PPO training with KL divergence tracking
+- DPO training as simpler baseline
+- Writeup (2,000 words):
+  - Reward model training and evaluation
+  - PPO vs DPO comparison (complexity, sample efficiency, final quality)
+  - KL divergence analysis and what it means
+  - Rollout generation and reward curves
+  - When to use which approach
+- Honest discussion: what worked, what was surprisingly hard, implementation gotchas
+
+**Key questions to answer**
+- Is reward model accuracy predictive of final RL quality?
+- How much does PPO improve over SFT baseline?
+- Is DPO's simplicity worth the potential quality trade-off?
+- What's the right KL penalty weight?
+- Do RL'd models actually behave more helpfully/safely?
+
+---
+
+### Phase 2 — Agent Benchmark Replication (weeks 11–14)
 
 Pick one published baseline — τ-bench paper baselines or SWE-agent on a SWE-Bench Verified subset — and reproduce the headline result. Document where you matched, where you diverged, and why.
 
@@ -319,6 +383,8 @@ Either outcome, written up rigorously and honestly, is more interesting than ano
 | Compute overrun | Medium | Low–Med | Enforce per-phase caps; prefer ≤3B models for all training experiments |
 | Scope creep on Phase 3 | High | High | Pre-register before running; log out-of-scope findings as Phase 5, do not absorb |
 | Phase 2 replication fails | Medium | Low | The attempt is the artefact; document the failure thoroughly |
+| SFT/RL implementation harder than expected | Medium | Medium | Phases 1a/1b have reduced scope; stub implementations acceptable if documented |
+| RL training unstable (PPO divergence) | Medium | Medium | DPO provides simpler fallback; focus writeup on comparison rather than perfect tuning |
 | Loses steam halfway through | Medium | Medium | That's fine — even two finished explorations is better than five half-done ones |
 
 ---
@@ -326,16 +392,25 @@ Either outcome, written up rigorously and honestly, is more interesting than ano
 ## Key Assumptions
 
 - Day-job intensity remains manageable. If things get hectic, timelines stretch but scope stays the same.
-- Personal compute/API budget of ~AUD $890 across the full program (Phases 1–5).
+- Personal compute/API budget of ~AUD $1,190 across the full program (Phases 1–5, including 1a and 1b).
+  - Phase 1: AUD $150 (pre-training)
+  - Phase 1a: AUD $100 (SFT)
+  - Phase 1b: AUD $200 (RL)
+  - Phase 2: AUD $200 (agent benchmark)
+  - Phase 3: AUD $400 (empirical study)
+  - Phase 5: AUD $140 (SAE study, optional)
 - Frontier model API access at consumer terms throughout.
 
 ---
 
 ## Explicit Non-Goals
 
-- Breadth across all research areas. Focusing on **agents and evals only** — the stuff that's actually interesting right now.
+- Breadth across all research areas. Focusing on **the full LLM pipeline → agents and evals** — understanding the whole stack from pre-training through RL to agent behavior.
 - Peer-reviewed publication. Workshop submission if something turns out genuinely novel; otherwise just solid writeups.
-- Frontier-scale results. All training experiments use ≤3B parameter models. The questions are interesting at small scale.
+- Frontier-scale results. All training experiments use ≤3B parameter models (primarily GPT-2 124M). The questions are interesting at small scale.
+- SOTA performance on benchmarks. Goal is understanding the techniques, not beating leaderboards.
+- Production-ready implementations. Research-quality code with clear patterns is sufficient; optimization comes later if needed.
+- Complex multi-task or multi-dataset training. One dataset per phase for clean comparisons.
 
 ---
 

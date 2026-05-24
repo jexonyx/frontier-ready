@@ -1066,6 +1066,1209 @@ Phase 3 is now much faster since we're just reorganizing code, not carefully ext
 
 ---
 
+## Phase 10: SFT/RL Extensions (Optional, Future Work)
+
+**Status:** Planning phase - implement after base workspace migration is complete and validated
+
+**Purpose:** Extend the workspace to support the full modern LLM training pipeline: pre-training → SFT → RL
+
+**Timeline estimate:** 4-6 hours
+
+**Prerequisites:**
+- Phases 1-9 complete and validated
+- At least one successful pre-training experiment run
+- Understanding of SFT and RL fundamentals
+
+---
+
+### 10.1 Package Structure Extensions
+
+**Create new packages for SFT and RL:**
+
+```bash
+# Create SFT package structure
+mkdir -p packages/nanogpt-sft/nanogpt_sft/{datasets,scripts}
+mkdir -p packages/nanogpt-rl/nanogpt_rl/{algorithms,scripts}
+```
+
+**Package: `nanogpt-sft/`** (Supervised Fine-Tuning)
+
+```
+packages/nanogpt-sft/
+├── nanogpt_sft/
+│   ├── __init__.py
+│   ├── data.py              # Instruction dataset loaders
+│   ├── formatting.py        # Prompt templates, chat formatting
+│   ├── trainer.py           # SFT-specific training loop
+│   ├── eval.py              # Instruction-following evals
+│   └── datasets/
+│       ├── __init__.py
+│       ├── alpaca.py        # Alpaca format loader
+│       ├── sharegpt.py      # ShareGPT/ChatML format
+│       └── custom.py        # Custom dataset adapters
+├── scripts/
+│   ├── prepare_sft_data.py
+│   ├── train_sft.py
+│   └── evaluate_sft.py
+├── pyproject.toml
+└── README.md
+```
+
+**Create `packages/nanogpt-sft/pyproject.toml`:**
+
+```bash
+cat > packages/nanogpt-sft/pyproject.toml << 'EOF'
+[project]
+name = "nanogpt-sft"
+version = "0.1.0"
+description = "Supervised fine-tuning for nanogpt models"
+requires-python = ">=3.11"
+dependencies = [
+    "nanogpt",                    # Reuse base model
+    "datasets>=2.14.0",           # HuggingFace datasets
+    "transformers>=4.36.0",       # For tokenization/evaluation
+    "jinja2>=3.1.0",             # Prompt templating
+    "scikit-learn>=1.3.0",       # For metrics
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "ruff>=0.4.0",
+]
+
+[project.scripts]
+nanogpt-sft-train = "nanogpt_sft.scripts.train_sft:main"
+nanogpt-sft-prepare = "nanogpt_sft.scripts.prepare_sft_data:main"
+nanogpt-sft-eval = "nanogpt_sft.scripts.evaluate_sft:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["nanogpt_sft*"]
+EOF
+```
+
+**Package: `nanogpt-rl/`** (Reinforcement Learning)
+
+```
+packages/nanogpt-rl/
+├── nanogpt_rl/
+│   ├── __init__.py
+│   ├── reward_model.py      # Reward model training
+│   ├── algorithms/
+│   │   ├── __init__.py
+│   │   ├── ppo.py           # PPO implementation
+│   │   ├── dpo.py           # Direct Preference Optimization
+│   │   └── reinforce.py     # Simple REINFORCE baseline
+│   ├── rollouts.py          # Generation and sampling
+│   ├── trainer.py           # RL training loop
+│   └── eval.py              # RL-specific evaluation
+├── scripts/
+│   ├── train_reward_model.py
+│   ├── train_ppo.py
+│   ├── train_dpo.py
+│   └── evaluate_rl.py
+├── pyproject.toml
+└── README.md
+```
+
+**Create `packages/nanogpt-rl/pyproject.toml`:**
+
+```bash
+cat > packages/nanogpt-rl/pyproject.toml << 'EOF'
+[project]
+name = "nanogpt-rl"
+version = "0.1.0"
+description = "Reinforcement learning for nanogpt models"
+requires-python = ">=3.11"
+dependencies = [
+    "nanogpt",
+    "nanogpt-sft",               # RL typically starts from SFT checkpoint
+    "torch>=2.2",
+    "einops>=0.7.0",             # Tensor operations
+    "accelerate>=0.24.0",        # For distributed training
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "ruff>=0.4.0",
+]
+
+[project.scripts]
+nanogpt-rl-reward = "nanogpt_rl.scripts.train_reward_model:main"
+nanogpt-rl-ppo = "nanogpt_rl.scripts.train_ppo:main"
+nanogpt-rl-dpo = "nanogpt_rl.scripts.train_dpo:main"
+nanogpt-rl-eval = "nanogpt_rl.scripts.evaluate_rl:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["nanogpt_rl*"]
+EOF
+```
+
+---
+
+### 10.2 Experiment Structure Extensions
+
+**Reorganize existing experiments and add new phases:**
+
+```bash
+# Reorganize existing pre-training experiments
+mkdir -p experiments/00-pretrain
+mv experiments/01-baseline experiments/00-pretrain/
+mv experiments/02-rope experiments/00-pretrain/
+
+# Create SFT experiment directory
+mkdir -p experiments/01-sft
+
+# Create RL experiment directory
+mkdir -p experiments/02-rl
+```
+
+**Create SFT experiment template:**
+
+```bash
+mkdir -p experiments/01-sft/01-baseline-sft/{writeup/figures,}
+
+cat > experiments/01-sft/01-baseline-sft/config.yaml << 'EOF'
+experiment:
+  name: "baseline-sft"
+  description: "SFT on Alpaca dataset using baseline pre-trained checkpoint"
+  base_checkpoint: "../../outputs/pretrain/baseline/checkpoints/step_19072.pt"
+
+model:
+  # Inherits from pre-trained checkpoint
+  # Can override specific parameters if needed
+
+training:
+  max_steps: 5000
+  batch_size: 32
+  sequence_length: 512         # Shorter for instruction data
+  gradient_accumulation_steps: 4
+  learning_rate: 2e-5          # Lower LR for fine-tuning
+  warmup_steps: 100
+  weight_decay: 0.01
+
+data:
+  dataset: "alpaca"
+  format: "instruction"        # Instruction-following format
+  train_split: "train"
+  val_split: "validation"
+  max_samples: null            # Use all data
+
+evaluation:
+  eval_interval: 100
+  eval_iters: 20
+  metrics:
+    - "loss"
+    - "perplexity"
+    - "instruction_following"  # Custom metric
+
+output:
+  log_dir: "../../outputs/sft/baseline-sft"
+  checkpoint_interval: 1000
+  save_samples: true           # Save generated samples for qualitative analysis
+EOF
+
+cat > experiments/01-sft/01-baseline-sft/run.py << 'EOF'
+#!/usr/bin/env python3
+"""
+Baseline SFT experiment.
+
+Fine-tunes pre-trained baseline model on Alpaca instruction dataset.
+"""
+
+from pathlib import Path
+import yaml
+
+from nanogpt import GPT, GPTConfig
+from nanogpt_sft import SFTTrainer, SFTConfig, load_pretrained_for_sft
+from nanogpt_sft.datasets import load_alpaca
+
+def main():
+    # Load config
+    with open("config.yaml") as f:
+        config = yaml.safe_load(f)
+
+    # Load pre-trained checkpoint
+    checkpoint_path = Path(config["experiment"]["base_checkpoint"])
+    model = load_pretrained_for_sft(checkpoint_path)
+
+    # Load SFT dataset
+    train_dataset = load_alpaca(split="train")
+    val_dataset = load_alpaca(split="validation")
+
+    # Create SFT config
+    sft_config = SFTConfig(
+        max_steps=config["training"]["max_steps"],
+        batch_size=config["training"]["batch_size"],
+        learning_rate=config["training"]["learning_rate"],
+        output_dir=Path(config["output"]["log_dir"]),
+    )
+
+    # Create trainer
+    trainer = SFTTrainer(
+        model=model,
+        config=sft_config,
+        train_dataset=train_dataset,
+        val_dataset=val_dataset,
+    )
+
+    # Run training
+    trainer.train()
+
+if __name__ == "__main__":
+    main()
+EOF
+
+chmod +x experiments/01-sft/01-baseline-sft/run.py
+
+cat > experiments/01-sft/01-baseline-sft/pyproject.toml << 'EOF'
+[project]
+name = "experiment-baseline-sft"
+version = "0.1.0"
+description = "Baseline SFT experiment"
+requires-python = ">=3.11"
+dependencies = [
+    "nanogpt",
+    "nanogpt-sft",
+    "exptools",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+analysis = [
+    "jupyter>=1.0.0",
+    "ipykernel>=6.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+EOF
+
+cat > experiments/01-sft/01-baseline-sft/README.md << 'EOF'
+# Experiment 01-SFT-01: Baseline SFT
+
+## Overview
+
+Fine-tunes the baseline pre-trained GPT-2 124M model on instruction-following data.
+
+## Configuration
+
+- **Base model:** Pre-trained baseline from `00-pretrain/01-baseline`
+- **Dataset:** Alpaca (52k instruction-following examples)
+- **Training:** 5,000 steps, lower learning rate (2e-5)
+- **Format:** Instruction-input-output format
+
+## Running
+
+```bash
+# From experiment directory
+uv run python run.py
+
+# Or from workspace root
+cd experiments/01-sft/01-baseline-sft && uv run python run.py
+```
+
+## Outputs
+
+- **Checkpoints:** `../../outputs/sft/baseline-sft/checkpoints/`
+- **Metrics:** `../../outputs/sft/baseline-sft/metrics.jsonl`
+- **Samples:** `../../outputs/sft/baseline-sft/samples.jsonl`
+
+## Analysis
+
+See `writeup/` for results and analysis notebooks.
+EOF
+```
+
+**Create RL experiment templates:**
+
+```bash
+# Reward model experiment
+mkdir -p experiments/02-rl/01-reward-model/{writeup/figures,}
+
+cat > experiments/02-rl/01-reward-model/config.yaml << 'EOF'
+experiment:
+  name: "reward-model"
+  description: "Train reward model on preference data"
+  base_checkpoint: "../../outputs/sft/baseline-sft/checkpoints/step_5000.pt"
+
+model:
+  # Binary classifier head on top of GPT
+  use_pooling: "last"          # Pool last token
+  hidden_dim: 768
+
+training:
+  max_steps: 3000
+  batch_size: 16
+  learning_rate: 1e-5
+  warmup_steps: 100
+
+data:
+  dataset: "hh-rlhf"           # Anthropic helpful/harmless
+  subset: "helpful-base"
+  max_pairs: 10000             # Limit for initial experiments
+
+evaluation:
+  eval_interval: 100
+  metrics:
+    - "accuracy"               # Preference prediction accuracy
+    - "calibration"
+
+output:
+  log_dir: "../../outputs/rl/reward-model"
+  checkpoint_interval: 500
+EOF
+
+# PPO experiment
+mkdir -p experiments/02-rl/02-ppo-baseline/{writeup/figures,}
+
+cat > experiments/02-rl/02-ppo-baseline/config.yaml << 'EOF'
+experiment:
+  name: "ppo-baseline"
+  description: "PPO training using trained reward model"
+  policy_checkpoint: "../../outputs/sft/baseline-sft/checkpoints/step_5000.pt"
+  reward_model: "../../outputs/rl/reward-model/checkpoints/best.pt"
+
+ppo:
+  num_rollouts: 10000
+  rollout_batch_size: 64
+  ppo_epochs: 4
+  learning_rate: 1e-6
+  clip_epsilon: 0.2
+  kl_penalty: 0.1              # KL divergence penalty weight
+  value_coef: 0.5
+  entropy_coef: 0.01
+
+generation:
+  max_length: 256
+  temperature: 0.7
+  top_p: 0.9
+
+evaluation:
+  eval_interval: 100
+  metrics:
+    - "reward"
+    - "kl_divergence"
+    - "perplexity"
+
+output:
+  log_dir: "../../outputs/rl/ppo-baseline"
+  checkpoint_interval: 500
+  save_rollouts: true          # Save generated rollouts
+EOF
+
+# DPO experiment (simpler alternative to PPO)
+mkdir -p experiments/02-rl/03-dpo-baseline/{writeup/figures,}
+
+cat > experiments/02-rl/03-dpo-baseline/config.yaml << 'EOF'
+experiment:
+  name: "dpo-baseline"
+  description: "DPO training (simpler than PPO, no reward model needed)"
+  base_checkpoint: "../../outputs/sft/baseline-sft/checkpoints/step_5000.pt"
+
+dpo:
+  max_steps: 3000
+  batch_size: 16
+  learning_rate: 5e-7
+  beta: 0.1                    # DPO temperature parameter
+
+data:
+  dataset: "hh-rlhf"
+  subset: "helpful-base"
+  max_pairs: 10000
+
+evaluation:
+  eval_interval: 100
+  metrics:
+    - "loss"
+    - "accuracy"               # Preference prediction
+    - "implicit_reward"
+
+output:
+  log_dir: "../../outputs/rl/dpo-baseline"
+  checkpoint_interval: 500
+EOF
+```
+
+**Create experiment overview READMEs:**
+
+```bash
+cat > experiments/00-pretrain/README.md << 'EOF'
+# Pre-training Experiments
+
+Base GPT-2 training from scratch with architectural modifications.
+
+## Experiments
+
+- **01-baseline:** Standard GPT-2 124M
+- **02-rope:** RoPE positional embeddings variant
+
+## Pipeline Position
+
+This is **Phase 0** of the training pipeline:
+
+```
+[Pre-train] → SFT → RL
+```
+
+Experiments here produce checkpoints used as starting points for SFT experiments.
+EOF
+
+cat > experiments/01-sft/README.md << 'EOF'
+# SFT (Supervised Fine-Tuning) Experiments
+
+Instruction fine-tuning on pre-trained models.
+
+## Experiments
+
+- **01-baseline-sft:** SFT on Alpaca using baseline pre-trained model
+- **02-rope-sft:** SFT on Alpaca using RoPE pre-trained model
+
+## Pipeline Position
+
+This is **Phase 1** of the training pipeline:
+
+```
+Pre-train → [SFT] → RL
+```
+
+Experiments here:
+- Load checkpoints from `00-pretrain/`
+- Fine-tune on instruction-following datasets
+- Produce SFT'd checkpoints for RL experiments
+
+## Datasets
+
+- **Alpaca:** 52k instruction-following examples
+- **Dolly:** 15k open-source instructions
+- **ShareGPT:** Conversational format
+
+See `../../data/sft/` for dataset details.
+EOF
+
+cat > experiments/02-rl/README.md << 'EOF'
+# RL (Reinforcement Learning) Experiments
+
+RLHF and preference-based training.
+
+## Experiments
+
+- **01-reward-model:** Train preference/reward model
+- **02-ppo-baseline:** PPO training with reward model
+- **03-dpo-baseline:** DPO training (simpler, no reward model)
+
+## Pipeline Position
+
+This is **Phase 2** of the training pipeline:
+
+```
+Pre-train → SFT → [RL]
+```
+
+Experiments here:
+- Load checkpoints from `01-sft/`
+- Train on preference data
+- Optimize for human preferences
+
+## Approaches
+
+### PPO (Proximal Policy Optimization)
+- More complex, requires reward model
+- Two-stage: train reward model, then policy
+- Industry standard (ChatGPT, Claude)
+
+### DPO (Direct Preference Optimization)
+- Simpler, no reward model needed
+- Single-stage training
+- Good baseline for comparison
+
+See individual experiment READMEs for details.
+EOF
+```
+
+---
+
+### 10.3 Data Organization Extensions
+
+```bash
+# Reorganize existing data
+mkdir -p data/pretrain
+mv data/edu_fineweb10B data/pretrain/
+mv data/hellaswag data/pretrain/
+
+# Create SFT data directories
+mkdir -p data/sft/{alpaca,dolly,sharegpt,custom}
+
+# Create RL data directories
+mkdir -p data/rl/{hh-rlhf,summarization,custom-preferences}
+
+# Create data READMEs
+cat > data/sft/README.md << 'EOF'
+# SFT Datasets
+
+Instruction-following and chat datasets for supervised fine-tuning.
+
+## Datasets
+
+### Alpaca
+- **Size:** 52k instruction-following examples
+- **Format:** Instruction-input-output triples
+- **Source:** Stanford Alpaca
+- **License:** CC BY-NC 4.0
+
+### Dolly
+- **Size:** 15k instruction-following examples
+- **Format:** Similar to Alpaca
+- **Source:** Databricks Dolly
+- **License:** CC BY-SA 3.0
+
+### ShareGPT
+- **Size:** Variable (community-contributed)
+- **Format:** Multi-turn conversations
+- **Source:** ShareGPT community
+- **License:** Varies
+
+## Format
+
+All datasets are converted to a standard format:
+
+```json
+{
+  "instruction": "What is the capital of France?",
+  "input": "",
+  "output": "The capital of France is Paris."
+}
+```
+
+For multi-turn conversations:
+
+```json
+{
+  "messages": [
+    {"role": "user", "content": "Hello!"},
+    {"role": "assistant", "content": "Hi! How can I help you?"},
+    ...
+  ]
+}
+```
+
+## Preparation
+
+See `packages/nanogpt-sft/scripts/prepare_sft_data.py` for data preparation scripts.
+EOF
+
+cat > data/rl/README.md << 'EOF'
+# RL Datasets
+
+Preference and reward modeling datasets for reinforcement learning.
+
+## Datasets
+
+### HH-RLHF (Helpful & Harmless)
+- **Size:** ~170k preference pairs
+- **Format:** Chosen vs rejected responses
+- **Source:** Anthropic
+- **License:** MIT
+
+### Summarization Preferences
+- **Size:** Variable
+- **Format:** Summary quality preferences
+- **Source:** OpenAI summarization dataset
+- **License:** MIT
+
+## Format
+
+Preference pairs:
+
+```json
+{
+  "prompt": "How do I bake a cake?",
+  "chosen": "Here's a simple recipe: ...",
+  "rejected": "I don't know."
+}
+```
+
+## Preparation
+
+See `packages/nanogpt-rl/scripts/train_reward_model.py` for usage.
+EOF
+```
+
+---
+
+### 10.4 Output Organization Extensions
+
+```bash
+# Reorganize existing outputs
+mkdir -p outputs/pretrain
+mv outputs/baseline outputs/pretrain/ 2>/dev/null || true
+mv outputs/rope outputs/pretrain/ 2>/dev/null || true
+
+# Create SFT output directories
+mkdir -p outputs/sft
+
+# Create RL output directories
+mkdir -p outputs/rl
+
+# Create output structure READMEs
+cat > outputs/pretrain/README.md << 'EOF'
+# Pre-training Outputs
+
+Checkpoints and metrics from pre-training experiments.
+
+## Structure
+
+Each experiment produces:
+- `checkpoints/` - Model checkpoints at intervals
+- `metrics.jsonl` - Training metrics (loss, lr, etc.)
+- `log.txt` - Console output
+
+## Usage
+
+Load checkpoints for SFT:
+
+```python
+from nanogpt_sft import load_pretrained_for_sft
+
+model = load_pretrained_for_sft("outputs/pretrain/baseline/checkpoints/step_19072.pt")
+```
+EOF
+
+cat > outputs/sft/README.md << 'EOF'
+# SFT Outputs
+
+Checkpoints and metrics from SFT experiments.
+
+## Structure
+
+Each experiment produces:
+- `checkpoints/` - Fine-tuned model checkpoints
+- `metrics.jsonl` - Training metrics
+- `eval_results.json` - Instruction-following evaluation scores
+- `samples.jsonl` - Generated samples for qualitative analysis
+
+## Usage
+
+Load checkpoints for RL:
+
+```python
+from nanogpt_rl import load_policy
+
+policy = load_policy("outputs/sft/baseline-sft/checkpoints/step_5000.pt")
+```
+EOF
+
+cat > outputs/rl/README.md << 'EOF'
+# RL Outputs
+
+Checkpoints and metrics from RL experiments.
+
+## Structure
+
+### Reward Model
+- `checkpoints/` - Reward model checkpoints
+- `validation_acc.jsonl` - Preference prediction accuracy
+
+### PPO/DPO Training
+- `checkpoints/` - Policy checkpoints
+- `metrics.jsonl` - Training metrics
+- `reward_stats.jsonl` - Reward distribution over time
+- `kl_divergence.jsonl` - KL divergence from reference model
+- `rollouts/` - Sample generations for qualitative analysis
+EOF
+```
+
+---
+
+### 10.5 Update Workspace Configuration
+
+**Update root `pyproject.toml`:**
+
+```bash
+cat > pyproject.toml << 'EOF'
+[project]
+name = "frontier-ready"
+version = "0.2.0"
+description = "ML research: GPT-2 pre-training, SFT, and RL experimentation"
+requires-python = ">=3.11"
+
+[tool.uv.workspace]
+members = [
+    # Core packages
+    "packages/nanogpt",
+    "packages/exptools",
+
+    # SFT & RL packages
+    "packages/nanogpt-sft",
+    "packages/nanogpt-rl",
+
+    # Pre-training experiments
+    "experiments/00-pretrain/*",
+
+    # SFT experiments
+    "experiments/01-sft/*",
+
+    # RL experiments
+    "experiments/02-rl/*",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "ruff>=0.4.0",
+    "ipython>=8.0.0",
+    "jupyter>=1.0.0",
+    "pytest>=7.4.0",
+    "tensorboard>=2.14.0",    # For monitoring all phases
+    "pyyaml>=6.0",            # Config file support
+]
+EOF
+```
+
+**Update `.gitignore`:**
+
+```bash
+cat >> .gitignore << 'EOF'
+
+# SFT outputs
+outputs/sft/*/checkpoints/*
+outputs/sft/*/samples.jsonl
+!outputs/sft/*/.gitkeep
+
+# RL outputs
+outputs/rl/*/checkpoints/*
+outputs/rl/*/rollouts/*
+!outputs/rl/*/.gitkeep
+
+# SFT data (potentially large)
+data/sft/alpaca/*
+data/sft/dolly/*
+data/sft/sharegpt/*
+!data/sft/*/.gitkeep
+
+# RL data
+data/rl/hh-rlhf/*
+!data/rl/*/.gitkeep
+EOF
+```
+
+---
+
+### 10.6 Create Minimal Implementation Stubs
+
+**SFT package stub - `packages/nanogpt-sft/nanogpt_sft/__init__.py`:**
+
+```bash
+cat > packages/nanogpt-sft/nanogpt_sft/__init__.py << 'EOF'
+"""
+NanoGPT SFT: Supervised fine-tuning for instruction following.
+
+Provides tools for:
+- Loading and formatting instruction datasets
+- Fine-tuning pre-trained models
+- Evaluating instruction-following capability
+"""
+
+__version__ = "0.1.0"
+
+from .trainer import SFTTrainer, SFTConfig
+from .data import load_pretrained_for_sft
+
+__all__ = [
+    "SFTTrainer",
+    "SFTConfig",
+    "load_pretrained_for_sft",
+]
+EOF
+
+cat > packages/nanogpt-sft/nanogpt_sft/data.py << 'EOF'
+"""Data loading utilities for SFT."""
+
+import torch
+from pathlib import Path
+from nanogpt import GPT
+
+def load_pretrained_for_sft(checkpoint_path: Path) -> GPT:
+    """
+    Load a pre-trained model checkpoint for SFT.
+
+    Args:
+        checkpoint_path: Path to pre-trained checkpoint
+
+    Returns:
+        GPT model with loaded weights
+    """
+    # TODO: Implement checkpoint loading
+    # For now, return stub
+    raise NotImplementedError("SFT checkpoint loading not yet implemented")
+EOF
+
+cat > packages/nanogpt-sft/nanogpt_sft/trainer.py << 'EOF'
+"""SFT training loop."""
+
+from dataclasses import dataclass
+from pathlib import Path
+
+@dataclass
+class SFTConfig:
+    """Configuration for SFT training."""
+    max_steps: int = 5000
+    batch_size: int = 32
+    learning_rate: float = 2e-5
+    output_dir: Path = Path("outputs/sft")
+    # Add more as needed
+
+class SFTTrainer:
+    """Trainer for supervised fine-tuning."""
+
+    def __init__(self, model, config, train_dataset, val_dataset):
+        self.model = model
+        self.config = config
+        self.train_dataset = train_dataset
+        self.val_dataset = val_dataset
+
+    def train(self):
+        """Run SFT training."""
+        # TODO: Implement SFT training loop
+        raise NotImplementedError("SFT training not yet implemented")
+EOF
+
+cat > packages/nanogpt-sft/nanogpt_sft/README.md << 'EOF'
+# NanoGPT SFT
+
+Supervised fine-tuning package for instruction following.
+
+## Status
+
+⚠️ **Stub implementation** - Core functionality to be implemented.
+
+## Installation
+
+```bash
+cd packages/nanogpt-sft
+uv pip install -e .
+```
+
+## Usage
+
+```python
+from nanogpt_sft import SFTTrainer, load_pretrained_for_sft
+
+# Load pre-trained model
+model = load_pretrained_for_sft("path/to/checkpoint.pt")
+
+# Configure and train
+trainer = SFTTrainer(model, config, train_data, val_data)
+trainer.train()
+```
+
+## Implementation TODO
+
+- [ ] Checkpoint loading from pre-training
+- [ ] Instruction dataset loaders (Alpaca, Dolly, ShareGPT)
+- [ ] Prompt formatting and templating
+- [ ] SFT training loop
+- [ ] Instruction-following evaluation metrics
+- [ ] Sample generation for qualitative analysis
+EOF
+```
+
+**RL package stub - `packages/nanogpt-rl/nanogpt_rl/__init__.py`:**
+
+```bash
+cat > packages/nanogpt-rl/nanogpt_rl/__init__.py << 'EOF'
+"""
+NanoGPT RL: Reinforcement learning from human feedback.
+
+Provides tools for:
+- Training reward models from preferences
+- PPO training with reward models
+- DPO training (simpler alternative)
+"""
+
+__version__ = "0.1.0"
+
+# Stub - to be implemented
+__all__ = []
+EOF
+
+cat > packages/nanogpt-rl/nanogpt_rl/README.md << 'EOF'
+# NanoGPT RL
+
+Reinforcement learning package for RLHF.
+
+## Status
+
+⚠️ **Stub implementation** - Core functionality to be implemented.
+
+## Approaches
+
+### PPO (Proximal Policy Optimization)
+- Two-stage: reward model → policy optimization
+- Industry standard
+
+### DPO (Direct Preference Optimization)
+- Single-stage, no reward model
+- Simpler implementation
+
+## Implementation TODO
+
+### Reward Model
+- [ ] Preference dataset loaders
+- [ ] Reward model architecture (binary classifier head)
+- [ ] Reward model training loop
+- [ ] Preference prediction evaluation
+
+### PPO
+- [ ] Rollout generation
+- [ ] PPO training loop
+- [ ] KL divergence tracking
+- [ ] Reward curve analysis
+
+### DPO
+- [ ] DPO loss implementation
+- [ ] Training loop
+- [ ] Implicit reward extraction
+EOF
+```
+
+---
+
+### 10.7 Update Root README
+
+**Update `README.md` to reflect full pipeline:**
+
+```bash
+cat > README.md << 'EOF'
+# frontier-ready
+
+A series of research & build tasks to build expertise working with frontier language models & language model systems.
+
+## Project Structure
+
+This is a workspace monorepo supporting the full modern LLM training pipeline:
+
+```
+Pre-training → SFT → RL
+```
+
+### Packages
+
+Reusable components:
+
+- **`nanogpt`** - Core GPT-2 training from scratch
+- **`exptools`** - Metrics, visualization, analysis
+- **`nanogpt-sft`** - Supervised fine-tuning (instruction following)
+- **`nanogpt-rl`** - Reinforcement learning from human feedback (PPO, DPO)
+
+### Experiments
+
+Research experiments organized by training phase:
+
+- **`experiments/00-pretrain/`** - Pre-training experiments (baseline, RoPE, etc.)
+- **`experiments/01-sft/`** - Instruction fine-tuning experiments
+- **`experiments/02-rl/`** - RLHF experiments (reward models, PPO, DPO)
+
+### Data & Outputs
+
+- **`data/`** - Shared datasets (pre-training, SFT, RL)
+- **`outputs/`** - Training outputs and checkpoints
+- **`infra/`** - Infrastructure as code (Pulumi/GCP)
+
+## Quick Start
+
+```bash
+# Clone and setup
+git clone <repo>
+cd frontier-ready
+uv sync
+
+# Run pre-training experiment
+cd experiments/00-pretrain/01-baseline
+uv run python run.py
+
+# Run SFT experiment (after pre-training)
+cd experiments/01-sft/01-baseline-sft
+uv run python run.py
+
+# Run RL experiment (after SFT)
+cd experiments/02-rl/02-ppo-baseline
+uv run python run.py
+```
+
+## Pipeline Workflow
+
+1. **Pre-train** a base model from scratch
+2. **SFT** on instruction-following data
+3. **RL** optimization with human preferences
+
+Each phase builds on the previous, but can also be run independently for experimentation.
+
+## Current Status
+
+- ✅ Pre-training infrastructure complete
+- ✅ Workspace structure established
+- 🚧 SFT packages (stub implementation)
+- 🚧 RL packages (stub implementation)
+
+See `PLAN.md` for detailed research roadmap.
+See `RESTRUCTURE_EXECUTION_PLAN.md` for technical implementation details.
+EOF
+```
+
+---
+
+### 10.8 Testing and Validation
+
+**Verify package installations:**
+
+```bash
+cd /Users/jex/frontier-ready
+
+# Sync workspace with new packages
+uv sync
+
+# Test imports
+uv run python -c "from nanogpt import GPT; print('✓ nanogpt')"
+uv run python -c "from exptools import load_metrics; print('✓ exptools')"
+uv run python -c "import nanogpt_sft; print('✓ nanogpt-sft')"
+uv run python -c "import nanogpt_rl; print('✓ nanogpt-rl')"
+
+# Verify experiment structure
+ls -la experiments/00-pretrain/
+ls -la experiments/01-sft/
+ls -la experiments/02-rl/
+
+# Verify data structure
+ls -la data/pretrain/
+ls -la data/sft/
+ls -la data/rl/
+```
+
+**Create verification checklist:**
+
+```bash
+cat > PHASE10_CHECKLIST.md << 'EOF'
+# Phase 10: SFT/RL Extensions - Verification Checklist
+
+## Package Creation
+- [ ] `packages/nanogpt-sft/` created with proper structure
+- [ ] `packages/nanogpt-rl/` created with proper structure
+- [ ] Both packages have pyproject.toml with correct dependencies
+- [ ] Both packages have stub implementations
+- [ ] READMEs document current status and TODOs
+
+## Experiment Structure
+- [ ] Pre-training experiments moved to `experiments/00-pretrain/`
+- [ ] SFT experiment template created in `experiments/01-sft/01-baseline-sft/`
+- [ ] RL experiment templates created in `experiments/02-rl/`
+- [ ] All experiment directories have proper READMEs
+- [ ] Config files are well-documented
+
+## Data Organization
+- [ ] Pre-training data moved to `data/pretrain/`
+- [ ] SFT data directories created in `data/sft/`
+- [ ] RL data directories created in `data/rl/`
+- [ ] Data READMEs document formats and sources
+
+## Output Organization
+- [ ] Pre-training outputs moved to `outputs/pretrain/`
+- [ ] SFT output directories created
+- [ ] RL output directories created
+- [ ] Output READMEs document structure
+
+## Workspace Configuration
+- [ ] Root pyproject.toml updated with new packages
+- [ ] .gitignore updated for new directories
+- [ ] All workspace members can be synced with `uv sync`
+
+## Package Installation
+- [ ] `uv sync` completes without errors
+- [ ] Can import nanogpt-sft
+- [ ] Can import nanogpt-rl
+- [ ] No broken dependencies
+
+## Documentation
+- [ ] Root README updated to reflect full pipeline
+- [ ] RESTRUCTURE_EXECUTION_PLAN.md includes Phase 10
+- [ ] All new directories have READMEs
+- [ ] Implementation TODOs are clearly marked
+
+## Next Steps
+- [ ] Implement SFT checkpoint loading
+- [ ] Implement SFT dataset loaders
+- [ ] Implement SFT training loop
+- [ ] Implement reward model training
+- [ ] Implement PPO algorithm
+- [ ] Implement DPO algorithm
+EOF
+```
+
+---
+
+### 10.9 Phase 10 Completion Criteria
+
+**Phase 10 is complete when:**
+
+1. ✅ Package structure created for SFT and RL
+2. ✅ Experiment templates created for all pipeline phases
+3. ✅ Data and output directories reorganized
+4. ✅ Workspace configuration updated
+5. ✅ All packages install without errors
+6. ✅ Documentation reflects full pipeline
+7. ✅ Stub implementations provide clear API contracts
+8. ✅ Implementation TODOs documented for future work
+
+**What Phase 10 does NOT include:**
+
+- ❌ Full SFT implementation (stub only)
+- ❌ Full RL implementation (stub only)
+- ❌ Dataset downloads or preparation
+- ❌ Actual training runs
+
+**These are left as future work** to be implemented incrementally as needed for specific experiments.
+
+---
+
+### 10.10 Timeline Estimate for Phase 10
+
+- Package structure creation: 1 hour
+- Experiment template creation: 1.5 hours
+- Data/output reorganization: 45 minutes
+- Documentation updates: 1 hour
+- Testing and validation: 45 minutes
+- **Total: 5 hours**
+
+---
+
+## Integration with Existing Plan
+
+**Phase 10 enables:**
+
+- **PLAN.md Phase 1a (SFT fundamentals)** - Infrastructure ready, just implement training loop
+- **PLAN.md Phase 1b (RL fundamentals)** - Infrastructure ready, just implement algorithms
+- **Future agent experiments** - Can use RL-trained models as agent backbones
+
+**Phase 10 maintains:**
+
+- ✅ Additive approach - doesn't modify existing pre-training code
+- ✅ Modular design - each package has clear boundaries
+- ✅ Consistent structure - same patterns across all phases
+- ✅ Professional standards - industry-standard pipeline organization
+
+---
+
 ## Next Steps After This Document
 
 1. Review this plan
