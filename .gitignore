@@ -15,9 +15,12 @@ outputs/*/log.txt
 !outputs/*/.gitkeep
 
 # Data files (large)
-data/edu_fineweb10B/*.bin
-data/hellaswag/*.jsonl
+data/edu_fineweb10B/
+hellaswag/
 !data/.gitkeep
+
+# Log files
+log/
 
 # UV lock file
 uv.lock
