@@ -10,12 +10,12 @@ Creates a new experiment in the workspace with all required files and configurat
 
 ## What This Skill Does
 
-1. Prompts for experiment details (name, hypothesis, resources)
+1. Prompts for experiment details (type, name, hypothesis, architecture/variant, resources)
 2. Creates complete experiment directory structure
-3. Generates all required files with proper configuration
+3. Generates all required files with proper configuration (variant-aware)
 4. Updates workspace configuration
 5. Runs validation tests
-6. Commits to git
+6. Stages files with git (user handles commit)
 
 ## Execution Steps
 
@@ -25,36 +25,71 @@ Use the `AskUserQuestion` tool to collect experiment details:
 
 **Questions to ask:**
 
-1. **Experiment Name** (header: "Name")
-   - Question: "What is the experiment name? (lowercase, no spaces, e.g., 'diffattn', 'swiglu', 'parallel')"
+1. **Experiment Type** (header: "Type")
+   - Question: "What type of experiment is this?"
    - Options:
-     - label: "diffattn", description: "Differential attention"
+     - label: "Architecture variant", description: "Testing a new architecture modification (attention, MLP, embeddings)"
+     - label: "Hyperparameter tuning", description: "Testing different hyperparameters on baseline model"
+     - label: "Data experiment", description: "Testing different data, preprocessing, or augmentation"
+     - label: "Baseline reproduction", description: "Reproducing baseline results for comparison"
+
+2. **Experiment Name** (header: "Name")
+   - Question: "What is the experiment name? (lowercase, no spaces, e.g., 'rope', 'swiglu', 'parallel')"
+   - Options:
+     - label: "rope", description: "Rotary position embeddings"
      - label: "swiglu", description: "SwiGLU activation"
+     - label: "diffattn", description: "Differential attention"
      - label: "parallel", description: "Parallel attention+MLP"
      - (User can enter custom name via "Other")
 
-2. **Brief Description** (header: "Description")
+3. **Brief Description** (header: "Description")
    - Question: "What does this experiment test? (one sentence)"
    - Options:
      - label: "New attention mechanism", description: "Testing a novel attention architecture"
      - label: "New activation function", description: "Testing a different activation in MLP"
      - label: "Architectural modification", description: "Structural change to transformer blocks"
 
-3. **Hypothesis** (header: "Hypothesis")
+4. **Architecture/Variant** (header: "Architecture") [Only if type is "Architecture variant"]
+   - Question: "Which architecture variant are you using?"
+   - Options:
+     - (Auto-detect from llmkit/variants/ and list available variants)
+     - label: "rope", description: "RoPE position embeddings (create_rope_gpt)"
+     - label: "Custom", description: "Custom variant not yet in llmkit/variants/"
+
+5. **Hypothesis** (header: "Hypothesis")
    - Question: "What do you expect to happen and why?"
    - Options:
      - label: "Lower loss than baseline", description: "Expect better performance"
      - label: "Faster convergence", description: "Expect to reach target loss sooner"
      - label: "Similar performance", description: "Null hypothesis - checking if change is neutral"
 
-4. **GPU Resources** (header: "Resources")
+6. **GPU Resources** (header: "Resources")
    - Question: "What GPU resources do you need?"
    - Options:
      - label: "1x A100 40GB", description: "$1.35/hr - Same as baseline (fair comparison)"
      - label: "1x A100 80GB", description: "$1.60/hr - More memory for larger batches"
      - label: "2x A100 40GB", description: "$2.70/hr - Distributed training"
 
-### Step 2: Determine Experiment Number
+### Step 2: Detect Available Variants
+
+If experiment type is "Architecture variant", detect available variants:
+
+```bash
+# List available variants
+echo "Available architecture variants:"
+ls -1 packages/llmkit/llmkit/variants/*.py | grep -v "__init__" | xargs -I{} basename {} .py
+
+# Parse each variant to extract create_* function
+for variant_file in packages/llmkit/llmkit/variants/*.py; do
+    if [ "$(basename ${variant_file})" != "__init__.py" ]; then
+        variant_name=$(basename ${variant_file} .py)
+        function_name=$(grep "^def create_" ${variant_file} | sed 's/def \(create_[^(]*\).*/\1/')
+        echo "  - ${variant_name}: ${function_name}"
+    fi
+done
+```
+
+### Step 3: Determine Experiment Number
 
 Read the `experiments/` directory to find the next available number:
 
@@ -64,7 +99,7 @@ ls -d experiments/*/ | sort | tail -1
 
 Extract the number from the last experiment and increment by 1.
 
-### Step 3: Create Directory Structure
+### Step 4: Create Directory Structure
 
 Create the experiment directory:
 
@@ -76,7 +111,34 @@ EXPERIMENT_DIR="experiments/${EXPERIMENT_NUM}-${EXPERIMENT_NAME}"
 mkdir -p "${EXPERIMENT_DIR}/writeup/figures"
 ```
 
-### Step 4: Create Files
+### Step 5: Create Files
+
+**Important:** Determine the correct imports and model creation based on experiment type.
+
+**If experiment type is "Architecture variant" and architecture is specified:**
+
+```python
+# Add to imports
+{VARIANT_IMPORT} = f"from llmkit.variants.{architecture} import create_{architecture}_gpt"
+
+# Model creation
+{MODEL_CREATION} = f"""    # Create model using variant
+    print(f"Creating model with {{cfg['experiment']['architecture']}} architecture...")
+    model = create_{architecture}_gpt(model_config)"""
+```
+
+**Otherwise (baseline, hyperparameter, data experiments):**
+
+```python
+# No variant import needed
+{VARIANT_IMPORT} = ""
+
+# Standard model creation
+{MODEL_CREATION} = """    # Create standard GPT model
+    model = GPT(model_config)"""
+```
+
+### Step 5a: Create Files
 
 Use the `Write` tool to create each file with proper substitutions.
 
@@ -85,8 +147,10 @@ Use the `Write` tool to create each file with proper substitutions.
 ```yaml
 experiment:
   name: {EXPERIMENT_NAME}
+  type: {EXPERIMENT_TYPE}  # "architecture_variant", "hyperparameter", "data", "baseline"
   description: "{DESCRIPTION}"
   hypothesis: "{HYPOTHESIS}"
+  architecture: {ARCHITECTURE}  # e.g., "rope", "swiglu", "baseline" (null if not architecture variant)
 
 model:
   n_layer: 12
@@ -134,15 +198,18 @@ hardware:
 """
 Experiment: {EXPERIMENT_NAME}
 
+Type: {EXPERIMENT_TYPE}
 Description: {DESCRIPTION}
 Hypothesis: {HYPOTHESIS}
+Architecture: {ARCHITECTURE}
 """
 
 import sys
 from pathlib import Path
 import yaml
 
-from nanogpt import GPT, GPTConfig, Trainer, TrainingConfig
+from llmkit import GPT, ModelConfig, Trainer, TrainingConfig
+{VARIANT_IMPORT}
 
 
 def load_config():
@@ -156,13 +223,15 @@ def main():
     """Run experiment."""
     cfg = load_config()
 
-    model_config = GPTConfig(
+    model_config = ModelConfig(
         n_layer=cfg["model"]["n_layer"],
         n_head=cfg["model"]["n_head"],
         n_embd=cfg["model"]["n_embd"],
         block_size=cfg["model"]["block_size"],
         vocab_size=cfg["model"]["vocab_size"],
     )
+
+{MODEL_CREATION}
 
     training_config = TrainingConfig(
         model_config=model_config,
@@ -209,7 +278,7 @@ version = "0.1.0"
 description = "{DESCRIPTION}"
 requires-python = ">=3.11"
 dependencies = [
-    "nanogpt",
+    "llmkit",
     "exptools",
     "pyyaml>=6.0",
 ]
@@ -414,8 +483,23 @@ Run tests to ensure everything is set up correctly:
 ```bash
 cd experiments/{EXPERIMENT_NUM}-{EXPERIMENT_NAME}
 
-# Test imports
-uv run python -c "import yaml; from nanogpt import GPT; from exptools import load_metrics; print('✓ Imports work')"
+# Test imports (including variant if applicable)
+if [ "{ARCHITECTURE}" != "null" ] && [ -n "{ARCHITECTURE}" ]; then
+    uv run python -c "
+import yaml
+from llmkit import GPT, ModelConfig
+from llmkit.variants.{ARCHITECTURE} import create_{ARCHITECTURE}_gpt
+from exptools import load_metrics
+print('✓ Imports work (including {ARCHITECTURE} variant)')
+"
+else
+    uv run python -c "
+import yaml
+from llmkit import GPT, ModelConfig
+from exptools import load_metrics
+print('✓ Imports work')
+"
+fi
 
 # Test config loading
 uv run python -c "
@@ -428,18 +512,17 @@ print(f'✓ Config loaded: {cfg[\"experiment\"][\"name\"]}')"
 ls -la
 ```
 
-### Step 8: Git Commit
+### Step 8: Stage Files with Git
+
+Stage the created files (don't commit - user handles commit):
 
 ```bash
 git add experiments/{EXPERIMENT_NUM}-{EXPERIMENT_NAME}
 git add outputs/{EXPERIMENT_NAME}/.gitkeep
 git add pyproject.toml
-git commit -m "Add experiment {EXPERIMENT_NUM}-{EXPERIMENT_NAME}
 
-- {DESCRIPTION}
-- Hypothesis: {HYPOTHESIS}
-- Resources: {GPU_RESOURCES}
-"
+# Show what's staged
+git status
 ```
 
 ### Step 9: Summary Output
@@ -452,14 +535,32 @@ Print a summary for the user:
 📁 Location: experiments/{EXPERIMENT_NUM}-{EXPERIMENT_NAME}/
 📊 Outputs: outputs/{EXPERIMENT_NAME}/
 
-Next steps:
-  1. Review configuration: cd experiments/{EXPERIMENT_NUM}-{EXPERIMENT_NAME} && cat config.yaml
-  2. Deploy VM: ./deploy.sh
-  3. Run training: (see README.md for detailed instructions)
+✓ Validations passed:
+  ✓ Imports (including {ARCHITECTURE} variant)
+  ✓ Config loading
+  ✓ Files exist
 
-Files created:
-  ✓ config.yaml
-  ✓ run.py
+📝 Suggested commit message:
+
+Add experiment {EXPERIMENT_NUM}-{EXPERIMENT_NAME}
+
+- Type: {EXPERIMENT_TYPE}
+- Architecture: {ARCHITECTURE}
+- Description: {DESCRIPTION}
+- Hypothesis: {HYPOTHESIS}
+- Resources: {GPU_RESOURCES}
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+
+📦 Next steps:
+  1. Review configuration: cd experiments/{EXPERIMENT_NUM}-{EXPERIMENT_NAME} && cat config.yaml
+  2. Commit changes: git commit -m "Add experiment {EXPERIMENT_NUM}-{EXPERIMENT_NAME}"
+  3. Deploy VM: ./deploy.sh
+  4. Run training: (see README.md for detailed instructions)
+
+📁 Files created:
+  ✓ config.yaml (with architecture: {ARCHITECTURE})
+  ✓ run.py (variant-aware model creation)
   ✓ pyproject.toml
   ✓ README.md
   ✓ infra.yaml
@@ -467,7 +568,8 @@ Files created:
   ✓ destroy.sh
   ✓ analysis.ipynb
 
-Committed to git: {commit_hash}
+💡 Architecture details:
+  {ARCHITECTURE_DETAILS}
 ```
 
 ## Error Handling
