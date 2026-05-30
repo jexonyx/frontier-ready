@@ -14,7 +14,7 @@ Pre-training → SFT → RL → Agents
 
 Reusable components:
 
-- **`nanogpt`** - Core GPT-2 training from scratch (ported from build-nanogpt)
+- **`llmkit`** - Modular LLM toolkit for training from scratch (based on build-nanogpt)
 - **`exptools`** - Metrics, visualization, and analysis tools
 
 ### Experiments

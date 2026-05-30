@@ -18,7 +18,7 @@ Weekend project to mess with things I don't get to explore properly: training dy
 
 | Phase | Weeks | Focus | Deliverable | Compute budget |
 |-------|-------|-------|-------------|----------------|
-| 1 | 1–3 | ML fundamentals — nanoGPT replication & extension | Public repo + writeup (1,500 words) | AUD $150 |
+| 1 | 1–3 | ML fundamentals — llmkit replication & extension | Public repo + writeup (1,500 words) | AUD $150 |
 | 1a | 4–6 | **SFT fundamentals — instruction tuning** | **Public repo + SFT writeup (1,500 words)** | **AUD $100** |
 | 1b | 7–10 | **RL fundamentals — PPO vs DPO comparison** | **Public repo + RL writeup (2,000 words)** | **AUD $200** |
 | 2 | 11–14 | Agent benchmark replication (τ-bench or SWE-Bench) | Public repo + replication notes (2,000 words) | AUD $200 |
@@ -66,7 +66,7 @@ This bridges pre-training and agents: agents need instruction-following capabili
 - Compute cap: AUD $100
 
 **Acceptance criteria**
-- Public repo: `nanogpt-sft` package with reusable SFT trainer
+- Public repo: `llmkit-sft` package with reusable SFT trainer
 - Comparison: base vs SFT on simple instruction-following tasks
 - Writeup (1,500 words): what is SFT, data format choices, hyperparameters, quantitative comparison, qualitative sample analysis
 - Honest discussion: where SFT helps, where it doesn't, what breaks
@@ -94,7 +94,7 @@ This completes the modern LLM training pipeline and provides RL-tuned models for
 - Compute cap: AUD $200
 
 **Acceptance criteria**
-- Public repo: `nanogpt-rl` package with PPO and DPO implementations
+- Public repo: `llmkit-rl` package with PPO and DPO implementations
 - Working reward model with validation accuracy >70%
 - PPO training with KL divergence tracking
 - DPO training as simpler baseline
