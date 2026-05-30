@@ -132,6 +132,7 @@ class Trainer:
         for step in range(start_step, self.max_steps):
             t0 = time.time()
             last_step = (step == self.max_steps - 1)
+            self.current_step = step  # Set current step for logging
             self.log_activations = (step % 50 == 0)
             self.activation_norms.clear()
             step_val_loss = None
