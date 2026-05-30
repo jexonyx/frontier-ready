@@ -87,15 +87,21 @@ python scripts/generate.py \
 ```
 nanogpt/
 ├── __init__.py         # Package exports
-├── config.py           # GPTConfig dataclass
-├── model.py            # GPT model architecture (CausalSelfAttention, MLP, Block, GPT)
+├── config/             # Configuration classes
+│   ├── model_config.py # ModelConfig dataclass
+│   └── component_config.py # Component configs (Attention, FeedForward, Initialization)
+├── core/               # Core model components
+│   ├── attention.py    # CausalSelfAttention
+│   ├── feedforward.py  # MLP
+│   ├── block.py        # TransformerBlock
+│   ├── embedding.py    # Position embeddings (Learned, RoPE, None)
+│   └── linear.py       # ScaledLinear
+├── models/             # Full model implementations
+│   └── gpt.py          # GPT model
 ├── training.py         # Trainer class with training loop
 ├── data.py             # DataLoaderLite and data utilities
 ├── eval.py             # HellaSwag evaluation
-├── generation.py       # Text generation utilities
-└── variants/
-    ├── __init__.py
-    └── rope.py         # RoPE positional embedding variant (experimental)
+└── generation.py       # Text generation utilities
 ```
 
 ## Python API
@@ -104,10 +110,24 @@ You can also use the package programmatically:
 
 ```python
 import torch
-from nanogpt import GPT, GPTConfig, DataLoaderLite, Trainer, generate
+from nanogpt import GPT, ModelConfig, DataLoaderLite, Trainer, generate
 
-# Create a model
-config = GPTConfig(vocab_size=50304, n_layer=12, n_head=12, n_embd=768)
+# Create a model with default settings
+config = ModelConfig(vocab_size=50304, n_layer=12, n_head=12, n_embd=768)
+model = GPT(config)
+
+# Or customize components
+from nanogpt import AttentionConfig, FeedForwardConfig
+
+config = ModelConfig(
+    vocab_size=50304,
+    n_layer=12,
+    n_head=12,
+    n_embd=768,
+    attention=AttentionConfig(dropout=0.1),
+    feedforward=FeedForwardConfig(expansion_factor=4, activation='gelu'),
+    position_embedding_type='rope'  # Use RoPE instead of learned embeddings
+)
 model = GPT(config)
 
 # Or load pretrained GPT-2 weights
@@ -135,21 +155,36 @@ trainer = Trainer(
 trainer.train()
 ```
 
-## Model Variants
+## Position Embedding Variants
 
-The package includes experimental model variants:
+The package supports multiple position embedding strategies via the modular API:
+
+### Learned Position Embeddings (Default)
+
+```python
+from nanogpt import GPT, ModelConfig
+
+config = ModelConfig(position_embedding_type='learned')  # Default
+model = GPT(config)
+```
 
 ### RoPE (Rotary Position Embeddings)
 
 ```python
-from nanogpt.variants.rope import RotaryGPT
-from nanogpt.config import GPTConfig
+from nanogpt import GPT, ModelConfig
 
-config = GPTConfig()
-model = RotaryGPT(config)  # Uses RoPE instead of learned positional embeddings
+config = ModelConfig(position_embedding_type='rope')
+model = GPT(config)
 ```
 
-Note: The RoPE implementation is currently a stub and needs to be completed.
+### No Position Embeddings
+
+```python
+from nanogpt import GPT, ModelConfig
+
+config = ModelConfig(position_embedding_type='none')
+model = GPT(config)
+```
 
 ## Features
 
