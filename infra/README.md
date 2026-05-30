@@ -22,7 +22,7 @@ GPU VM infrastructure for ML experiments using Pulumi + GCP.
    **Option B: Pulumi config**
    ```bash
    pulumi config set gcpProject your-gcp-project-id
-   pulumi config set experimentName nanogpt
+   pulumi config set experimentName llmkit
    ```
 
 3. **Initialize Pulumi stack:**
@@ -37,7 +37,7 @@ GPU VM infrastructure for ML experiments using Pulumi + GCP.
 ```bash
 # Using environment variables
 export GCP_PROJECT=your-project-id
-export EXPERIMENT_NAME=nanogpt
+export EXPERIMENT_NAME=llmkit
 pulumi up
 
 # Or override with command-line config
@@ -136,11 +136,11 @@ For H100 availability, check [GCP GPU regions](https://cloud.google.com/compute/
 
 ## Examples
 
-### Phase 1: NanoGPT Training (H100)
+### Phase 1: LLMKit Training (H100)
 
 ```bash
 export GCP_PROJECT=your-project
-export EXPERIMENT_NAME=phase1-nanogpt
+export EXPERIMENT_NAME=phase1-llmkit
 export MACHINE_TYPE=a3-highgpu-8g  # 8x H100
 export GPU_TYPE=nvidia-h100-80gb
 export GPU_COUNT=1

@@ -4,7 +4,7 @@ config:
   gcp:project: your-gcp-project-id
 
   # Experiment Configuration - REQUIRED
-  frontier-ready-infra:experimentName: nanogpt  # Name of your experiment
+  frontier-ready-infra:experimentName: llmkit  # Name of your experiment
   frontier-ready-infra:environment: dev         # Environment (dev, staging, prod)
 
   # Compute Configuration - REQUIRED
