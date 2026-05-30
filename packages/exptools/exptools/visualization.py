@@ -48,7 +48,7 @@ def plot_loss_curves(df, output_path: Path, model_size: str = "124M"):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
 
     # Panel 1: Training loss
-    ax1.plot(df['step'], df['train_loss'], label='nanoGPT train loss', linewidth=1.5)
+    ax1.plot(df['step'], df['train_loss'], label='llmkit train loss', linewidth=1.5)
     ax1.set_xlabel('Training Steps', fontsize=12)
     ax1.set_ylabel('Loss', fontsize=12)
     ax1.set_yscale('log')
@@ -61,7 +61,7 @@ def plot_loss_curves(df, output_path: Path, model_size: str = "124M"):
     val_loss_data = df[['step', 'val_loss']].dropna()
     if not val_loss_data.empty:
         ax2.plot(val_loss_data['step'], val_loss_data['val_loss'],
-                label='nanoGPT val loss', linewidth=1.5, marker='o', markersize=3)
+                label='llmkit val loss', linewidth=1.5, marker='o', markersize=3)
 
         # Add OpenAI baseline
         if model_size in BASELINES["val_loss"]:
@@ -97,7 +97,7 @@ def plot_hellaswag_accuracy(df, output_path: Path, model_size: str = "124M"):
     hella_data = df[['step', 'hella_acc']].dropna()
     if not hella_data.empty:
         ax.plot(hella_data['step'], hella_data['hella_acc'],
-               label='nanoGPT', linewidth=1.5, marker='o', markersize=4)
+               label='llmkit', linewidth=1.5, marker='o', markersize=4)
 
         # Add OpenAI GPT-2 baseline
         if model_size in BASELINES["hellaswag_gpt2"]:
