@@ -16,7 +16,7 @@ import argparse
 import torch
 from torch.distributed import init_process_group, destroy_process_group
 
-from nanogpt import GPT, GPTConfig, DataLoaderLite, Trainer, get_cosine_lr_schedule
+from nanogpt import GPT, ModelConfig, DataLoaderLite, Trainer, get_cosine_lr_schedule
 
 
 def main():
@@ -123,7 +123,7 @@ def main():
     torch.set_float32_matmul_precision('high')
 
     # Create model
-    config = GPTConfig(
+    config = ModelConfig(
         vocab_size=args.vocab_size,
         n_layer=args.n_layer,
         n_head=args.n_head,

@@ -4,8 +4,21 @@ Based on Andrej Karpathy's build-nanogpt video lecture series:
 https://github.com/karpathy/build-nanogpt
 """
 
-from .config import GPTConfig
-from .model import GPT, Block, CausalSelfAttention, MLP
+# New modular API
+from .config import ModelConfig, AttentionConfig, FeedForwardConfig, InitializationConfig
+from .models import GPT
+from .core import (
+    TransformerBlock,
+    CausalSelfAttention,
+    MLP,
+    ScaledLinear,
+    PositionEmbedding,
+    LearnedPositionEmbedding,
+    RoPEPositionEmbedding,
+    NoPositionEmbedding,
+)
+
+# Data, training, and evaluation
 from .data import DataLoaderLite, load_tokens
 from .training import Trainer, get_cosine_lr_schedule
 from .generation import generate
@@ -20,13 +33,22 @@ from .eval import (
 __version__ = "0.1.0"
 
 __all__ = [
-    # Config
-    'GPTConfig',
-    # Model
+    # New modular API - Config
+    'ModelConfig',
+    'AttentionConfig',
+    'FeedForwardConfig',
+    'InitializationConfig',
+    # New modular API - Model
     'GPT',
-    'Block',
+    'TransformerBlock',
     'CausalSelfAttention',
     'MLP',
+    'ScaledLinear',
+    # New modular API - Position embeddings
+    'PositionEmbedding',
+    'LearnedPositionEmbedding',
+    'RoPEPositionEmbedding',
+    'NoPositionEmbedding',
     # Data
     'DataLoaderLite',
     'load_tokens',

@@ -8,7 +8,7 @@ Usage:
 import argparse
 import torch
 
-from nanogpt import GPT, GPTConfig, generate
+from nanogpt import GPT, ModelConfig, generate
 
 
 def main():
@@ -42,9 +42,9 @@ def main():
     # Try to get config from checkpoint, or infer from model weights
     if 'config' in checkpoint:
         config_dict = checkpoint['config']
-        # Config might be a dict, convert to GPTConfig
+        # Config might be a dict, convert to ModelConfig
         if isinstance(config_dict, dict):
-            config = GPTConfig(**config_dict)
+            config = ModelConfig(**config_dict)
         else:
             config = config_dict
     else:
@@ -52,7 +52,7 @@ def main():
         model_state = checkpoint.get('model', checkpoint)
         vocab_size = model_state['transformer.wte.weight'].shape[0]
 
-        config = GPTConfig(
+        config = ModelConfig(
             block_size=1024,
             vocab_size=vocab_size,
             n_layer=12,
