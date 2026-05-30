@@ -10,14 +10,14 @@ from pathlib import Path
 import sys
 import yaml
 
-# Ensure local repository root is on sys.path so imports from nanogpt resolve.
+# Ensure local repository root is on sys.path so imports from llmkit resolve.
 repo_root = Path(__file__).resolve()
 for parent in repo_root.parents:
-    if (parent / "nanogpt").exists():
+    if (parent / "llmkit").exists():
         sys.path.insert(0, str(parent))
         break
 
-from nanogpt import GPT, ModelConfig, Trainer
+from llmkit import GPT, ModelConfig, Trainer
 
 def main():
     # Load config

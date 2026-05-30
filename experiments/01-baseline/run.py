@@ -9,7 +9,7 @@ from pathlib import Path
 import yaml
 import torch
 
-from nanogpt import GPT, ModelConfig, Trainer
+from llmkit import GPT, ModelConfig, Trainer
 
 def main():
     # Load config
