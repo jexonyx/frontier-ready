@@ -9,7 +9,7 @@ from pathlib import Path
 import yaml
 import torch
 
-from nanogpt import GPT, GPTConfig, Trainer
+from nanogpt import GPT, ModelConfig, Trainer
 
 def main():
     # Load config
@@ -17,8 +17,8 @@ def main():
     with open(config_path) as f:
         config = yaml.safe_load(f)
 
-    # Create model config
-    model_config = GPTConfig(**config["model"])
+    # Create model config using new modular API
+    model_config = ModelConfig(**config["model"])
 
     # Create model
     model = GPT(model_config)

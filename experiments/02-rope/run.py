@@ -7,11 +7,17 @@ instead of learned positional embeddings.
 """
 
 from pathlib import Path
+import sys
 import yaml
-import torch
 
-from nanogpt import GPTConfig, Trainer
-from nanogpt.variants.rope import RoPEGPT
+# Ensure local repository root is on sys.path so imports from nanogpt resolve.
+repo_root = Path(__file__).resolve()
+for parent in repo_root.parents:
+    if (parent / "nanogpt").exists():
+        sys.path.insert(0, str(parent))
+        break
+
+from nanogpt import GPT, ModelConfig, Trainer
 
 def main():
     # Load config
@@ -19,11 +25,14 @@ def main():
     with open(config_path) as f:
         config = yaml.safe_load(f)
 
-    # Create model config
-    model_config = GPTConfig(**config["model"])
+    # Create model config using new modular API
+    model_config = ModelConfig(**config["model"])
 
-    # Create RoPE variant model
-    model = RoPEGPT(model_config)
+    # Use RoPE position embeddings instead of learned
+    model_config.position_embedding_type = "rope"
+
+    # Create model with RoPE
+    model = GPT(model_config)
 
     # Create trainer
     trainer = Trainer(
