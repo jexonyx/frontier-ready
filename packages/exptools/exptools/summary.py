@@ -7,6 +7,7 @@ Usage:
 """
 
 import argparse
+import math
 from pathlib import Path
 
 from .metrics import (
@@ -42,6 +43,11 @@ def format_number(value, decimals=3):
     """Format a number with commas and specified decimal places."""
     if value is None:
         return "N/A"
+    try:
+        if math.isnan(value) or math.isinf(value):
+            return "N/A"
+    except TypeError:
+        pass
     if isinstance(value, int) or value == int(value):
         return f"{int(value):,}"
     return f"{value:,.{decimals}f}"
@@ -75,7 +81,7 @@ def generate_summary(log_dir: str, model_size: str = "124M", tokens_per_step: in
     # Load data
     df = load_metrics(log_dir)
     final_metrics = get_final_metrics(df, tokens_per_step)
-    convergence_stats = get_convergence_stats(df, tokens_per_step)
+    convergence_stats = get_convergence_stats(df)
     efficiency_stats = get_training_efficiency_stats(df)
     layer_stats = get_layer_analysis_stats(df)
 

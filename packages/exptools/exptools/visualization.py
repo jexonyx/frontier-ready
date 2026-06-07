@@ -58,22 +58,24 @@ def plot_loss_curves(df, output_path: Path, model_size: str = "124M"):
     ax1.set_title('Training Loss', fontsize=14, fontweight='bold')
 
     # Panel 2: Validation loss
-    val_loss_data = df[['step', 'val_loss']].dropna()
-    if not val_loss_data.empty:
-        ax2.plot(val_loss_data['step'], val_loss_data['val_loss'],
-                label='llmkit val loss', linewidth=1.5, marker='o', markersize=3)
+    if 'val_loss' in df.columns:
+        val_loss_data = df[['step', 'val_loss']].dropna()
+        if not val_loss_data.empty:
+            ax2.plot(val_loss_data['step'], val_loss_data['val_loss'],
+                    label='llmkit val loss', linewidth=1.5, marker='o', markersize=3)
 
-        # Add OpenAI baseline
-        if model_size in BASELINES["val_loss"]:
-            baseline = BASELINES["val_loss"][model_size]
-            ax2.axhline(y=baseline, color='r', linestyle='--', linewidth=2,
-                       label=f'OpenAI GPT-2 ({model_size})')
+            # Add OpenAI baseline
+            if model_size in BASELINES["val_loss"]:
+                baseline = BASELINES["val_loss"][model_size]
+                ax2.axhline(y=baseline, color='r', linestyle='--', linewidth=2,
+                           label=f'OpenAI GPT-2 ({model_size})')
 
     ax2.set_xlabel('Training Steps', fontsize=12)
     ax2.set_ylabel('Loss', fontsize=12)
     ax2.set_yscale('log')
     ax2.grid(True, alpha=0.3)
-    ax2.legend(fontsize=10)
+    if ax2.get_legend_handles_labels()[0]:
+        ax2.legend(fontsize=10)
     ax2.set_title('Validation Loss', fontsize=14, fontweight='bold')
 
     plt.tight_layout()
@@ -94,28 +96,30 @@ def plot_hellaswag_accuracy(df, output_path: Path, model_size: str = "124M"):
     sns.set_style("whitegrid")
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    hella_data = df[['step', 'hella_acc']].dropna()
-    if not hella_data.empty:
-        ax.plot(hella_data['step'], hella_data['hella_acc'],
-               label='llmkit', linewidth=1.5, marker='o', markersize=4)
+    if 'hella_acc' in df.columns:
+        hella_data = df[['step', 'hella_acc']].dropna()
+        if not hella_data.empty:
+            ax.plot(hella_data['step'], hella_data['hella_acc'],
+                   label='llmkit', linewidth=1.5, marker='o', markersize=4)
 
-        # Add OpenAI GPT-2 baseline
-        if model_size in BASELINES["hellaswag_gpt2"]:
-            baseline_gpt2 = BASELINES["hellaswag_gpt2"][model_size]
-            ax.axhline(y=baseline_gpt2, color='r', linestyle='--', linewidth=2,
-                      label=f'OpenAI GPT-2 ({model_size})')
+            # Add OpenAI GPT-2 baseline
+            if model_size in BASELINES["hellaswag_gpt2"]:
+                baseline_gpt2 = BASELINES["hellaswag_gpt2"][model_size]
+                ax.axhline(y=baseline_gpt2, color='r', linestyle='--', linewidth=2,
+                          label=f'OpenAI GPT-2 ({model_size})')
 
-        # Add OpenAI GPT-3 baseline
-        if model_size in BASELINES["hellaswag_gpt3"]:
-            baseline_gpt3 = BASELINES["hellaswag_gpt3"][model_size]
-            ax.axhline(y=baseline_gpt3, color='g', linestyle='--', linewidth=2,
-                      label=f'OpenAI GPT-3 ({model_size})')
+            # Add OpenAI GPT-3 baseline
+            if model_size in BASELINES["hellaswag_gpt3"]:
+                baseline_gpt3 = BASELINES["hellaswag_gpt3"][model_size]
+                ax.axhline(y=baseline_gpt3, color='g', linestyle='--', linewidth=2,
+                          label=f'OpenAI GPT-3 ({model_size})')
 
     ax.set_xlabel('Training Steps', fontsize=12)
     ax.set_ylabel('Accuracy', fontsize=12)
     ax.set_ylim(0.0, 0.6)
     ax.grid(True, alpha=0.3)
-    ax.legend(fontsize=10)
+    if ax.get_legend_handles_labels()[0]:
+        ax.legend(fontsize=10)
     ax.set_title('HellaSwag Accuracy', fontsize=14, fontweight='bold')
 
     plt.tight_layout()

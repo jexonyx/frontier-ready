@@ -123,19 +123,18 @@ def get_final_metrics(df: pd.DataFrame, tokens_per_step: int = 524288) -> dict:
         'final_val_loss': float(final_val_loss) if final_val_loss is not None else None,
         'final_hella_acc': float(final_hella_acc) if final_hella_acc is not None else None,
         'min_train_loss': float(df['train_loss'].min()),
-        'min_val_loss': float(df['val_loss'].min()) if 'val_loss' in df.columns else None,
-        'max_hella_acc': float(df['hella_acc'].max()) if 'hella_acc' in df.columns else None,
+        'min_val_loss': float(df['val_loss'].dropna().min()) if 'val_loss' in df.columns and not df['val_loss'].dropna().empty else None,
+        'max_hella_acc': float(df['hella_acc'].dropna().max()) if 'hella_acc' in df.columns and not df['hella_acc'].dropna().empty else None,
         'total_tokens': int(final_row['step']) * tokens_per_step,
     }
 
 
-def get_convergence_stats(df: pd.DataFrame, tokens_per_step: int = 524288) -> dict:
+def get_convergence_stats(df: pd.DataFrame) -> dict:
     """
     Analyze convergence behavior.
 
     Args:
         df: DataFrame from load_metrics()
-        tokens_per_step: Number of tokens processed per step (default: 524288)
 
     Returns:
         {
@@ -250,13 +249,14 @@ def get_layer_analysis_stats(df: pd.DataFrame, num_layers: int = 12) -> dict:
 
     if available_grad_cols:
         layer_means = df[available_grad_cols].mean()
-        max_layer_idx = layer_means.idxmax()
-        min_layer_idx = layer_means.idxmin()
-
-        result['highest_grad_norm_layer'] = int(max_layer_idx.split('layer')[-1])
-        result['highest_grad_norm_mean'] = float(layer_means[max_layer_idx])
-        result['lowest_grad_norm_layer'] = int(min_layer_idx.split('layer')[-1])
-        result['lowest_grad_norm_mean'] = float(layer_means[min_layer_idx])
+        valid_means = layer_means.dropna()
+        if not valid_means.empty:
+            max_layer_idx = valid_means.idxmax()
+            min_layer_idx = valid_means.idxmin()
+            result['highest_grad_norm_layer'] = int(max_layer_idx.split('layer')[-1])
+            result['highest_grad_norm_mean'] = float(valid_means[max_layer_idx])
+            result['lowest_grad_norm_layer'] = int(min_layer_idx.split('layer')[-1])
+            result['lowest_grad_norm_mean'] = float(valid_means[min_layer_idx])
 
     # Analyze update ratios
     update_ratio_cols = [f'layer_update_ratios_layer{i}' for i in range(num_layers)]
